@@ -30,7 +30,6 @@ nlp = load_spacy()
 def extract_text(uploaded_file):
     ext = uploaded_file.name.split(".")[-1].lower()
     text = ""
-    numeric_data = None
 
     if ext == "pdf":
         with pdfplumber.open(uploaded_file) as pdf:
@@ -40,8 +39,14 @@ def extract_text(uploaded_file):
                     text += page_text + "\n"
 
     elif ext in ["png", "jpg", "jpeg"]:
-        img = Image.open(uploaded_file)
-        text = pytesseract.image_to_string(img)
+        try:
+            img = Image.open(uploaded_file)
+            text = pytesseract.image_to_string(img)
+        except Exception:
+            text = (
+                "⚠️ Image OCR is not supported in this deployment environment.\n"
+                "Please upload PDF / TXT / CSV files or paste text manually."
+            )
 
     elif ext == "txt":
         text = uploaded_file.read().decode("utf-8")
@@ -50,8 +55,11 @@ def extract_text(uploaded_file):
         df = pd.read_csv(uploaded_file)
         if "doctor_prescription" in df.columns:
             text = df["doctor_prescription"].iloc[0]
+        else:
+            text = "⚠️ CSV file does not contain 'doctor_prescription' column."
 
     return text.strip()
+
 
 # -------------------- NLP + DIET LOGIC (MILESTONE 3) --------------------
 def generate_diet(text):
