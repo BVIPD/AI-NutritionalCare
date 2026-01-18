@@ -3,9 +3,9 @@ pandas
 numpy
 scikit-learn
 lightgbm
-joblib
+spacy>=3.7.0
+transformers
+torch
 pdfplumber
 pytesseract
 pillow
-spacy
-transformers
