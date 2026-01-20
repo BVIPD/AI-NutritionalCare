@@ -3,12 +3,13 @@ import pandas as pd
 import pdfplumber
 import pytesseract
 from PIL import Image
+import re
 import spacy
+import io
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-import io
 
-# -------------------- PAGE CONFIG --------------------
+# ---------------- PAGE CONFIG ----------------
 st.set_page_config(
     page_title="AI-NutritionalCare",
     page_icon="🥗",
@@ -19,16 +20,28 @@ st.title("🥗 AI-NutritionalCare")
 st.caption("AI-driven Personalized Diet Recommendation System")
 st.markdown("---")
 
-# -------------------- SAFE NLP (NO EXTERNAL MODELS) --------------------
+# ---------------- NLP SAFE LOAD ----------------
 @st.cache_resource
-def load_nlp():
+def load_spacy():
     nlp = spacy.blank("en")
     nlp.add_pipe("sentencizer")
     return nlp
 
-nlp = load_nlp()
+nlp = load_spacy()
 
-# -------------------- TEXT EXTRACTION --------------------
+# ---------------- UTILITIES ----------------
+def extract_patient_name(text):
+    patterns = [
+        r"patient\s*name\s*[:\-]\s*(.+)",
+        r"patient\s*[:\-]\s*(.+)",
+        r"name\s*[:\-]\s*(.+)"
+    ]
+    for p in patterns:
+        match = re.search(p, text, re.IGNORECASE)
+        if match:
+            return match.group(1).strip().split("\n")[0]
+    return "Unknown Patient"
+
 def extract_text(uploaded_file):
     ext = uploaded_file.name.split(".")[-1].lower()
     text = ""
@@ -44,11 +57,8 @@ def extract_text(uploaded_file):
         try:
             img = Image.open(uploaded_file)
             text = pytesseract.image_to_string(img)
-        except Exception:
-            text = (
-                "OCR not supported in this environment.\n"
-                "Please upload PDF / TXT / CSV or paste text manually."
-            )
+        except:
+            text = ""
 
     elif ext == "txt":
         text = uploaded_file.read().decode("utf-8")
@@ -57,157 +67,140 @@ def extract_text(uploaded_file):
         df = pd.read_csv(uploaded_file)
         if "doctor_prescription" in df.columns:
             text = df["doctor_prescription"].iloc[0]
-        else:
-            text = "CSV missing 'doctor_prescription' column."
+        elif "patient_name" in df.columns:
+            text = "Patient Name: " + df["patient_name"].iloc[0]
 
     return text.strip()
 
-# -------------------- DIET GENERATION --------------------
-def generate_diet(text, food_type):
-    text = text.lower()
+# ---------------- DIET ENGINE ----------------
+def generate_monthly_diet(condition_text, food_pref):
+    veg = food_pref == "Vegetarian"
 
-    diet = {
-        "condition": [],
-        "allowed_foods": [],
-        "restricted_foods": [],
-        "diet_plan": [],
-        "lifestyle_advice": []
-    }
+    base_protein = (
+        ["lentils", "paneer", "tofu"]
+        if veg else
+        ["grilled chicken", "fish", "eggs"]
+    )
 
-    # Base foods
-    veg_foods = ["vegetables", "fruits", "whole grains", "lentils"]
-    nonveg_foods = veg_foods + ["eggs", "fish", "grilled chicken"]
+    month_plan = {}
 
-    diet["allowed_foods"] = veg_foods if food_type == "Vegetarian" else nonveg_foods
+    for week in range(1, 5):
+        month_plan[f"Week {week}"] = {
+            "Breakfast": f"Oats, fruits, {base_protein[0]}",
+            "Lunch": f"Brown rice, vegetables, {base_protein[1]}",
+            "Snack": "Fruits or nuts",
+            "Dinner": f"Salad, soup, {base_protein[2]}"
+        }
 
-    if "diabetes" in text:
-        diet["condition"].append("Diabetes")
-        diet["noticed_foods"] = "Low sugar foods recommended"
-        diet["restricted_foods"].append("Sugar")
-        diet["diet_plan"].append("Low sugar, low glycemic index diet.")
-        diet["lifestyle_advice"].append("Daily walking for 30 minutes.")
+    return month_plan
 
-    if "cholesterol" in text:
-        diet["condition"].append("High Cholesterol")
-        diet["restricted_foods"].append("Fried food")
-        diet["diet_plan"].append("Increase fiber intake.")
+def infer_conditions(text):
+    conditions = []
+    if "diabetes" in text.lower():
+        conditions.append("Diabetes")
+    if "cholesterol" in text.lower():
+        conditions.append("High Cholesterol")
+    if "hypertension" in text.lower() or "blood pressure" in text.lower():
+        conditions.append("Hypertension")
 
-    if "blood pressure" in text or "hypertension" in text:
-        diet["condition"].append("Hypertension")
-        diet["restricted_foods"].append("Excess salt")
-        diet["diet_plan"].append("Low sodium diet.")
-        diet["lifestyle_advice"].append("Stress management and regular exercise.")
+    return conditions or ["General Health"]
 
-    if not diet["condition"]:
-        diet["condition"].append("General Health")
-        diet["diet_plan"].append("Maintain a balanced diet.")
-        diet["lifestyle_advice"].append("Stay active and hydrated.")
-
-    return {
-        "condition": ", ".join(diet["condition"]),
-        "allowed_foods": list(set(diet["allowed_foods"])),
-        "restricted_foods": list(set(diet["restricted_foods"])),
-        "diet_plan": " ".join(diet["diet_plan"]),
-        "lifestyle_advice": " ".join(diet["lifestyle_advice"])
-    }
-
-# -------------------- OUTPUT FORMATTING (SIR STYLE) --------------------
-def format_output(diet, patient):
-    output = f"""
-Patient: {patient}
-Listing 1: Sample Diet Plan from AI-NutritionalCare
-
-Medical Condition: {diet['condition']}
-
-Allowed Foods:
-- {', '.join(diet['allowed_foods'])}
-
-Restricted Foods:
-- {', '.join(diet['restricted_foods'])}
-
-Diet Plan:
-{diet['diet_plan']}
-
-Lifestyle Advice:
-{diet['lifestyle_advice']}
-"""
-    return output.strip()
-
-# -------------------- PDF GENERATION --------------------
-def generate_pdf(text):
+# ---------------- PDF GENERATOR ----------------
+def generate_pdf(patient, conditions, diet):
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
 
-    y = height - 40
-    for line in text.split("\n"):
-        c.drawString(40, y, line)
-        y -= 15
-        if y < 40:
+    y = height - 50
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, y, "AI-NutritionalCare Diet Report")
+
+    y -= 40
+    c.setFont("Helvetica", 11)
+    c.drawString(50, y, f"Patient: {patient}")
+    y -= 20
+    c.drawString(50, y, f"Medical Conditions: {', '.join(conditions)}")
+
+    y -= 30
+    for week, meals in diet.items():
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(50, y, week)
+        y -= 20
+        c.setFont("Helvetica", 10)
+        for m, v in meals.items():
+            c.drawString(60, y, f"{m}: {v}")
+            y -= 15
+        y -= 10
+
+        if y < 100:
             c.showPage()
-            y = height - 40
+            y = height - 50
 
     c.save()
     buffer.seek(0)
     return buffer
 
-# -------------------- USER INPUT UI --------------------
+# ---------------- UI INPUT ----------------
 st.subheader("📄 Upload Medical Report")
 
-patient_name = st.text_input("👤 Patient Name", placeholder="Enter patient name")
-
-food_type = st.radio(
-    "🥦 Food Preference",
-    ["Vegetarian", "Non-Vegetarian"]
-)
+food_pref = st.radio("🍽 Food Preference", ["Vegetarian", "Non-Vegetarian"])
 
 uploaded_file = st.file_uploader(
     "Upload PDF / Image / TXT / CSV",
     type=["pdf", "png", "jpg", "jpeg", "txt", "csv"]
 )
 
-manual_text = st.text_area(
-    "OR paste doctor prescription text",
-    height=150
-)
+manual_text = st.text_area("OR paste doctor prescription text", height=120)
 
-process_btn = st.button("🔍 Generate Diet Recommendation")
+process = st.button("🔍 Generate Diet Recommendation")
 
-# -------------------- PIPELINE --------------------
-if process_btn:
-    if uploaded_file is None and manual_text.strip() == "":
-        st.warning("Please upload a file or enter text.")
+# ---------------- EXECUTION ----------------
+if process:
+    if not uploaded_file and not manual_text.strip():
+        st.warning("Please upload a file or paste text.")
     else:
-        if patient_name.strip() == "":
-            patient_name = "Anonymous Patient"
+        with st.spinner("Analyzing medical data..."):
+            text = extract_text(uploaded_file) if uploaded_file else manual_text
 
-        if uploaded_file:
-            text = extract_text(uploaded_file)
-        else:
-            text = manual_text
+            patient = extract_patient_name(text)
+            conditions = infer_conditions(text)
+            monthly_diet = generate_monthly_diet(text, food_pref)
 
-        diet = generate_diet(text, food_type)
-        formatted_output = format_output(diet, patient_name)
+        st.markdown("## 📋 Final Diet Plan")
 
-        st.subheader("🧾 Final Diet Plan")
-        st.code(formatted_output)
+        st.markdown(f"""
+        **Patient:** {patient}  
+        **Medical Condition:** {", ".join(conditions)}
+        """)
 
-        # JSON Download
+        for week, meals in monthly_diet.items():
+            with st.expander(week):
+                for k, v in meals.items():
+                    st.write(f"**{k}:** {v}")
+
+        json_data = {
+            "patient": patient,
+            "conditions": conditions,
+            "diet_plan": monthly_diet
+        }
+
         st.download_button(
             "⬇️ Download JSON",
-            data=pd.Series(diet).to_json(),
-            file_name=f"{patient_name}_DietPlan.json",
+            data=pd.Series(json_data).to_json(),
+            file_name=f"{patient}_DietPlan.json",
             mime="application/json"
         )
 
-        # PDF Download
-        pdf_file = generate_pdf(formatted_output)
+        pdf_file = generate_pdf(patient, conditions, monthly_diet)
+
         st.download_button(
             "⬇️ Download PDF",
             data=pdf_file,
-            file_name=f"{patient_name}_DietPlan.pdf",
+            file_name=f"{patient}_DietPlan.pdf",
             mime="application/pdf"
         )
 
+        st.success("✅ Diet plan generated successfully!")
+
 st.markdown("---")
-st.caption("© AI-NutritionalCare | End-to-End Deployed Diet Recommendation System")
+st.caption("© AI-NutritionalCare | Internship Project – End-to-End Deployment")
