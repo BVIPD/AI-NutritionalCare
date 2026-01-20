@@ -56,8 +56,8 @@ def extract_patient_name(text):
 
 
 def extract_conditions(text):
-    conditions = []
     t = text.lower()
+    conditions = []
     if "diabetes" in t:
         conditions.append("Diabetes")
     if "cholesterol" in t:
@@ -67,16 +67,16 @@ def extract_conditions(text):
     return conditions if conditions else ["General Health"]
 
 # --------------------------------------------------
-# MEALS (NO INGREDIENTS, NO COOKING)
+# MEAL DATA (ONLY MEAL NAMES)
 # --------------------------------------------------
 VEG_MEALS = [
-    "Vegetable Khichdi","Chapati & Veg Sabzi","Vegetable Upma","Oats Porridge",
+    "Vegetable Khichdi","Chapati & Mixed Veg Sabzi","Vegetable Upma","Oats Porridge",
     "Curd Rice","Vegetable Dalia","Paneer Bhurji","Lemon Rice",
-    "Idli & Sambar","Vegetable Poha","Rajma Rice","Veg Pulao",
-    "Sprouts Salad","Tomato Soup","Veg Sandwich","Masala Oats",
-    "Curd Bowl","Veg Fried Rice","Paneer Salad","Veg Soup",
-    "Ragi Porridge","Dal & Chapati","Veg Cutlet","Fruit Bowl",
-    "Vegetable Khichdi","Chapati & Veg Sabzi","Vegetable Upma","Oats Porridge"
+    "Idli & Sambar","Vegetable Poha","Rajma Rice","Stuffed Paratha",
+    "Veg Pulao","Sprouts Salad","Tomato Soup","Veg Sandwich",
+    "Masala Oats","Curd Bowl","Veg Fried Rice","Paneer Salad",
+    "Veg Soup","Ragi Porridge","Cabbage Fry","Besan Omelette",
+    "Dal & Chapati","Veg Cutlet","Bottle Gourd Khichdi","Fruit Bowl"
 ]
 
 NONVEG_MEALS = [
@@ -84,24 +84,24 @@ NONVEG_MEALS = [
     "Chicken Soup","Egg Fried Rice","Grilled Fish","Chicken Sandwich",
     "Egg Bhurji","Chicken Pulao","Fish Fry","Chicken Curry",
     "Egg Curry","Chicken Salad","Fish Soup","Egg Toast",
-    "Chicken Wrap","Fish Rice Bowl","Egg Salad","Chicken Stir Fry",
-    "Fish Lemon Curry","Egg Rice","Chicken Stew","Protein Bowl",
-    "Egg Omelette","Grilled Chicken","Fish Curry","Boiled Eggs"
+    "Chicken Wrap","Grilled Chicken & Veg","Fish Rice Bowl","Egg Salad",
+    "Chicken Stir Fry","Fish Lemon Curry","Egg Rice","Chicken Stew",
+    "Fish Stew","Egg Paratha","Chicken Cutlet","Protein Bowl"
 ]
 
 def generate_month_plan(pref):
     meals = VEG_MEALS if pref == "Vegetarian" else NONVEG_MEALS
-    return meals[:28]
+    return meals[:28]   # no repetition
 
 # --------------------------------------------------
-# PDF GENERATOR
+# PDF GENERATOR (MEALS ONLY)
 # --------------------------------------------------
 def generate_pdf(patient, conditions, plan):
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
-
     y = height - 40
+
     c.setFont("Helvetica-Bold", 14)
     c.drawString(40, y, "AI-NutritionalCare Diet Report")
     y -= 30
@@ -113,12 +113,13 @@ def generate_pdf(patient, conditions, plan):
     y -= 30
 
     for i, food in enumerate(plan, 1):
-        if y < 80:
+        if y < 100:
             c.showPage()
             y = height - 40
 
+        c.setFont("Helvetica-Bold", 11)
         c.drawString(40, y, f"Day {i}: {food}")
-        y -= 18
+        y -= 20
 
     c.save()
     buffer.seek(0)
@@ -132,7 +133,11 @@ uploaded = st.file_uploader(
     type=["pdf", "csv", "txt"]
 )
 
-preference = st.radio("🥦 Food Preference", ["Vegetarian", "Non-Vegetarian"])
+preference = st.radio(
+    "🥦 Food Preference",
+    ["Vegetarian", "Non-Vegetarian"]
+)
+
 run = st.button("✨ Generate Diet Recommendation")
 
 # --------------------------------------------------
@@ -140,7 +145,7 @@ run = st.button("✨ Generate Diet Recommendation")
 # --------------------------------------------------
 if run:
     if not uploaded:
-        st.warning("Please upload a medical report.")
+        st.warning("Please upload a file.")
         st.stop()
 
     raw_text = extract_text(uploaded)
@@ -148,42 +153,49 @@ if run:
     conditions = extract_conditions(raw_text)
     month_plan = generate_month_plan(preference)
 
+    # Faculty-style Output
     st.subheader("📄 Output")
     st.markdown(f"""
 **Patient:** {patient}  
 **Medical Condition:** {', '.join(conditions)}  
-**Listing 1:** AI-Generated Personalized Diet Plan
+**Listing 1:** Sample Diet Plan from AI-NutritionalCare
 """)
 
+    # Month Plan UI
     st.subheader("📅 1-Month Diet Plan (Day-wise)")
     tabs = st.tabs(["Week 1", "Week 2", "Week 3", "Week 4"])
 
-    idx = 0
+    day_index = 0
     for tab in tabs:
         with tab:
             for _ in range(7):
-                st.success(f"🍽️ Day {idx+1}: {month_plan[idx]}")
-                idx += 1
+                if day_index >= len(month_plan):
+                    break
+                with st.expander(f"🍽️ Day {day_index + 1}"):
+                    st.success(month_plan[day_index])
+                day_index += 1
 
     # Downloads
+    diet_json = {
+        "patient": patient,
+        "conditions": conditions,
+        "diet_plan": [
+            {"day": i + 1, "meal": meal}
+            for i, meal in enumerate(month_plan)
+        ]
+    }
+
     st.download_button(
         "⬇️ Download JSON",
-        data=pd.Series({
-            "patient": patient,
-            "conditions": conditions,
-            "diet_plan": month_plan
-        }).to_json(),
+        data=pd.Series(diet_json).to_json(),
         file_name="diet_plan.json",
         mime="application/json"
     )
 
-    pdf = generate_pdf(patient, conditions, month_plan)
+    pdf_file = generate_pdf(patient, conditions, month_plan)
     st.download_button(
         "⬇️ Download PDF",
-        data=pdf,
-        file_name=f"{patient.replace(' ','_')}_DietPlan.pdf",
+        data=pdf_file,
+        file_name=f"{patient.replace(' ', '_')}_DietPlan.pdf",
         mime="application/pdf"
     )
-
-st.divider()
-st.caption("© AI-NutritionalCare | Internship Final Submission")
