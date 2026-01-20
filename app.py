@@ -67,40 +67,80 @@ def extract_conditions(text):
     return conditions if conditions else ["General Health"]
 
 # --------------------------------------------------
-# MEAL DATA (ONLY MEAL NAMES)
+# MEAL DATA (BREAKFAST / LUNCH / DINNER)
 # --------------------------------------------------
-VEG_MEALS = [
-    "Vegetable Khichdi","Chapati & Mixed Veg Sabzi","Vegetable Upma","Oats Porridge",
-    "Curd Rice","Vegetable Dalia","Paneer Bhurji","Lemon Rice",
-    "Idli & Sambar","Vegetable Poha","Rajma Rice","Stuffed Paratha",
-    "Veg Pulao","Sprouts Salad","Tomato Soup","Veg Sandwich",
-    "Masala Oats","Curd Bowl","Veg Fried Rice","Paneer Salad",
-    "Veg Soup","Ragi Porridge","Cabbage Fry","Besan Omelette",
-    "Dal & Chapati","Veg Cutlet","Bottle Gourd Khichdi","Fruit Bowl"
+VEG_DAYS = [
+    {"breakfast": "Oats Porridge", "lunch": "Veg Pulao", "dinner": "Chapati & Mixed Veg"},
+    {"breakfast": "Idli & Sambar", "lunch": "Rajma Rice", "dinner": "Curd Rice"},
+    {"breakfast": "Vegetable Poha", "lunch": "Veg Khichdi", "dinner": "Tomato Soup"},
+    {"breakfast": "Masala Oats", "lunch": "Dal & Chapati", "dinner": "Paneer Bhurji"},
+    {"breakfast": "Ragi Porridge", "lunch": "Veg Fried Rice", "dinner": "Cabbage Fry"},
+    {"breakfast": "Sprouts Salad", "lunch": "Veg Biryani", "dinner": "Curd Bowl"},
+    {"breakfast": "Fruit Bowl", "lunch": "Stuffed Paratha", "dinner": "Veg Soup"},
+    {"breakfast": "Upma", "lunch": "Vegetable Dalia", "dinner": "Paneer Salad"},
+    {"breakfast": "Besan Omelette", "lunch": "Bottle Gourd Khichdi", "dinner": "Veg Cutlet"},
+    {"breakfast": "Curd & Fruits", "lunch": "Veg Sandwich", "dinner": "Lemon Rice"},
+    {"breakfast": "Vegetable Toast", "lunch": "Veg Pulao", "dinner": "Dal Soup"},
+    {"breakfast": "Oats Idli", "lunch": "Veg Fried Rice", "dinner": "Chapati & Sabzi"},
+    {"breakfast": "Smoothie Bowl", "lunch": "Rajma Rice", "dinner": "Tomato Soup"},
+    {"breakfast": "Poha", "lunch": "Veg Khichdi", "dinner": "Curd Rice"},
+    {"breakfast": "Ragi Dosa", "lunch": "Dal & Chapati", "dinner": "Veg Soup"},
+    {"breakfast": "Idli", "lunch": "Veg Biryani", "dinner": "Paneer Bhurji"},
+    {"breakfast": "Oats Porridge", "lunch": "Veg Sandwich", "dinner": "Cabbage Fry"},
+    {"breakfast": "Sprouts Bowl", "lunch": "Veg Pulao", "dinner": "Curd Bowl"},
+    {"breakfast": "Fruit Salad", "lunch": "Stuffed Paratha", "dinner": "Tomato Soup"},
+    {"breakfast": "Masala Oats", "lunch": "Veg Fried Rice", "dinner": "Paneer Salad"},
+    {"breakfast": "Vegetable Upma", "lunch": "Veg Khichdi", "dinner": "Veg Soup"},
+    {"breakfast": "Ragi Porridge", "lunch": "Dal & Chapati", "dinner": "Curd Rice"},
+    {"breakfast": "Poha", "lunch": "Veg Biryani", "dinner": "Tomato Soup"},
+    {"breakfast": "Oats Smoothie", "lunch": "Veg Sandwich", "dinner": "Paneer Bhurji"},
+    {"breakfast": "Idli", "lunch": "Rajma Rice", "dinner": "Veg Soup"},
+    {"breakfast": "Fruit Bowl", "lunch": "Veg Pulao", "dinner": "Curd Bowl"},
+    {"breakfast": "Besan Toast", "lunch": "Veg Khichdi", "dinner": "Dal Soup"},
+    {"breakfast": "Vegetable Poha", "lunch": "Veg Fried Rice", "dinner": "Paneer Salad"}
 ]
 
-NONVEG_MEALS = [
-    "Egg Omelette","Grilled Chicken","Fish Curry","Boiled Eggs",
-    "Chicken Soup","Egg Fried Rice","Grilled Fish","Chicken Sandwich",
-    "Egg Bhurji","Chicken Pulao","Fish Fry","Chicken Curry",
-    "Egg Curry","Chicken Salad","Fish Soup","Egg Toast",
-    "Chicken Wrap","Grilled Chicken & Veg","Fish Rice Bowl","Egg Salad",
-    "Chicken Stir Fry","Fish Lemon Curry","Egg Rice","Chicken Stew",
-    "Fish Stew","Egg Paratha","Chicken Cutlet","Protein Bowl"
+NONVEG_DAYS = [
+    {"breakfast": "Boiled Eggs & Toast", "lunch": "Grilled Chicken & Rice", "dinner": "Fish Curry"},
+    {"breakfast": "Egg Omelette", "lunch": "Chicken Pulao", "dinner": "Chicken Soup"},
+    {"breakfast": "Egg Toast", "lunch": "Fish Rice Bowl", "dinner": "Chicken Stir Fry"},
+    {"breakfast": "Scrambled Eggs", "lunch": "Chicken Curry", "dinner": "Egg Salad"},
+    {"breakfast": "Boiled Eggs", "lunch": "Grilled Fish", "dinner": "Chicken Wrap"},
+    {"breakfast": "Egg Bhurji", "lunch": "Chicken Biryani", "dinner": "Fish Soup"},
+    {"breakfast": "Protein Toast", "lunch": "Chicken Fried Rice", "dinner": "Egg Curry"},
+    {"breakfast": "Egg Sandwich", "lunch": "Chicken Pulao", "dinner": "Fish Fry"},
+    {"breakfast": "Egg Omelette", "lunch": "Grilled Chicken", "dinner": "Chicken Soup"},
+    {"breakfast": "Boiled Eggs", "lunch": "Fish Curry", "dinner": "Chicken Salad"},
+    {"breakfast": "Egg Toast", "lunch": "Chicken Rice", "dinner": "Egg Bhurji"},
+    {"breakfast": "Egg Wrap", "lunch": "Fish Rice Bowl", "dinner": "Chicken Stir Fry"},
+    {"breakfast": "Scrambled Eggs", "lunch": "Chicken Curry", "dinner": "Fish Soup"},
+    {"breakfast": "Egg Omelette", "lunch": "Chicken Pulao", "dinner": "Egg Salad"},
+    {"breakfast": "Boiled Eggs", "lunch": "Grilled Fish", "dinner": "Chicken Wrap"},
+    {"breakfast": "Egg Toast", "lunch": "Chicken Fried Rice", "dinner": "Fish Curry"},
+    {"breakfast": "Egg Bhurji", "lunch": "Chicken Biryani", "dinner": "Chicken Soup"},
+    {"breakfast": "Protein Bowl", "lunch": "Fish Rice Bowl", "dinner": "Egg Curry"},
+    {"breakfast": "Egg Sandwich", "lunch": "Chicken Pulao", "dinner": "Fish Fry"},
+    {"breakfast": "Boiled Eggs", "lunch": "Grilled Chicken", "dinner": "Chicken Salad"},
+    {"breakfast": "Egg Omelette", "lunch": "Fish Curry", "dinner": "Egg Bhurji"},
+    {"breakfast": "Egg Toast", "lunch": "Chicken Rice", "dinner": "Fish Soup"},
+    {"breakfast": "Scrambled Eggs", "lunch": "Chicken Curry", "dinner": "Egg Salad"},
+    {"breakfast": "Egg Wrap", "lunch": "Fish Rice Bowl", "dinner": "Chicken Stir Fry"},
+    {"breakfast": "Boiled Eggs", "lunch": "Chicken Pulao", "dinner": "Fish Curry"},
+    {"breakfast": "Egg Sandwich", "lunch": "Grilled Fish", "dinner": "Chicken Soup"},
+    {"breakfast": "Egg Bhurji", "lunch": "Chicken Fried Rice", "dinner": "Egg Curry"},
+    {"breakfast": "Protein Toast", "lunch": "Chicken Biryani", "dinner": "Fish Soup"}
 ]
 
 def generate_month_plan(pref):
-    meals = VEG_MEALS if pref == "Vegetarian" else NONVEG_MEALS
-    return meals[:28]   # no repetition
+    return VEG_DAYS if pref == "Vegetarian" else NONVEG_DAYS
 
 # --------------------------------------------------
-# PDF GENERATOR (MEALS ONLY)
+# PDF GENERATOR
 # --------------------------------------------------
 def generate_pdf(patient, conditions, plan):
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
-    y = height - 40
+    y = 800
 
     c.setFont("Helvetica-Bold", 14)
     c.drawString(40, y, "AI-NutritionalCare Diet Report")
@@ -112,13 +152,21 @@ def generate_pdf(patient, conditions, plan):
     c.drawString(40, y, f"Medical Conditions: {', '.join(conditions)}")
     y -= 30
 
-    for i, food in enumerate(plan, 1):
-        if y < 100:
+    for i, day in enumerate(plan, 1):
+        if y < 120:
             c.showPage()
-            y = height - 40
+            y = 800
 
         c.setFont("Helvetica-Bold", 11)
-        c.drawString(40, y, f"Day {i}: {food}")
+        c.drawString(40, y, f"Day {i}")
+        y -= 15
+
+        c.setFont("Helvetica", 10)
+        c.drawString(50, y, f"Breakfast: {day['breakfast']}")
+        y -= 12
+        c.drawString(50, y, f"Lunch: {day['lunch']}")
+        y -= 12
+        c.drawString(50, y, f"Dinner: {day['dinner']}")
         y -= 20
 
     c.save()
@@ -128,16 +176,8 @@ def generate_pdf(patient, conditions, plan):
 # --------------------------------------------------
 # INPUT UI
 # --------------------------------------------------
-uploaded = st.file_uploader(
-    "📄 Upload Medical Report (PDF / CSV / TXT)",
-    type=["pdf", "csv", "txt"]
-)
-
-preference = st.radio(
-    "🥦 Food Preference",
-    ["Vegetarian", "Non-Vegetarian"]
-)
-
+uploaded = st.file_uploader("📄 Upload Medical Report (PDF / CSV / TXT)", type=["pdf", "csv", "txt"])
+preference = st.radio("🥦 Food Preference", ["Vegetarian", "Non-Vegetarian"])
 run = st.button("✨ Generate Diet Recommendation")
 
 # --------------------------------------------------
@@ -153,7 +193,6 @@ if run:
     conditions = extract_conditions(raw_text)
     month_plan = generate_month_plan(preference)
 
-    # Faculty-style Output
     st.subheader("📄 Output")
     st.markdown(f"""
 **Patient:** {patient}  
@@ -161,33 +200,27 @@ if run:
 **Listing 1:** Sample Diet Plan from AI-NutritionalCare
 """)
 
-    # Month Plan UI
-    st.subheader("📅 1-Month Diet Plan (Day-wise)")
+    st.subheader("📅 1-Month Diet Plan (Breakfast • Lunch • Dinner)")
     tabs = st.tabs(["Week 1", "Week 2", "Week 3", "Week 4"])
 
-    day_index = 0
+    day_idx = 0
     for tab in tabs:
         with tab:
             for _ in range(7):
-                if day_index >= len(month_plan):
-                    break
-                with st.expander(f"🍽️ Day {day_index + 1}"):
-                    st.success(month_plan[day_index])
-                day_index += 1
-
-    # Downloads
-    diet_json = {
-        "patient": patient,
-        "conditions": conditions,
-        "diet_plan": [
-            {"day": i + 1, "meal": meal}
-            for i, meal in enumerate(month_plan)
-        ]
-    }
+                day = month_plan[day_idx]
+                with st.expander(f"🍽️ Day {day_idx + 1}"):
+                    st.write(f"**Breakfast:** {day['breakfast']}")
+                    st.write(f"**Lunch:** {day['lunch']}")
+                    st.write(f"**Dinner:** {day['dinner']}")
+                day_idx += 1
 
     st.download_button(
         "⬇️ Download JSON",
-        data=pd.Series(diet_json).to_json(),
+        data=pd.Series({
+            "patient": patient,
+            "conditions": conditions,
+            "diet_plan": month_plan
+        }).to_json(),
         file_name="diet_plan.json",
         mime="application/json"
     )
