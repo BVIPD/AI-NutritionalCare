@@ -3,30 +3,32 @@ import pandas as pd
 import pdfplumber
 import pytesseract
 from PIL import Image
-import re
 import spacy
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+import io
 
 # -------------------- PAGE CONFIG --------------------
 st.set_page_config(
-    page_title="AI-NutriCare",
+    page_title="AI-NutritionalCare",
     page_icon="🥗",
     layout="centered"
 )
 
-st.title("🥗 AI-NutriCare")
+st.title("🥗 AI-NutritionalCare")
 st.caption("AI-driven Personalized Diet Recommendation System")
 st.markdown("---")
 
-# -------------------- LOAD NLP SAFELY --------------------
+# -------------------- SAFE NLP (NO EXTERNAL MODELS) --------------------
 @st.cache_resource
-def load_spacy():
+def load_nlp():
     nlp = spacy.blank("en")
     nlp.add_pipe("sentencizer")
     return nlp
 
-nlp = load_spacy()
+nlp = load_nlp()
 
-# -------------------- TEXT EXTRACTION (MILESTONE 1) --------------------
+# -------------------- TEXT EXTRACTION --------------------
 def extract_text(uploaded_file):
     ext = uploaded_file.name.split(".")[-1].lower()
     text = ""
@@ -44,8 +46,8 @@ def extract_text(uploaded_file):
             text = pytesseract.image_to_string(img)
         except Exception:
             text = (
-                "⚠️ Image OCR is not supported in this deployment environment.\n"
-                "Please upload PDF / TXT / CSV files or paste text manually."
+                "OCR not supported in this environment.\n"
+                "Please upload PDF / TXT / CSV or paste text manually."
             )
 
     elif ext == "txt":
@@ -56,39 +58,45 @@ def extract_text(uploaded_file):
         if "doctor_prescription" in df.columns:
             text = df["doctor_prescription"].iloc[0]
         else:
-            text = "⚠️ CSV file does not contain 'doctor_prescription' column."
+            text = "CSV missing 'doctor_prescription' column."
 
     return text.strip()
 
+# -------------------- DIET GENERATION --------------------
+def generate_diet(text, food_type):
+    text = text.lower()
 
-# -------------------- NLP + DIET LOGIC (MILESTONE 3) --------------------
-def generate_diet(text):
     diet = {
         "condition": [],
-        "allowed_foods": ["vegetables", "whole grains", "fruits"],
+        "allowed_foods": [],
         "restricted_foods": [],
         "diet_plan": [],
         "lifestyle_advice": []
     }
 
-    text = text.lower()
+    # Base foods
+    veg_foods = ["vegetables", "fruits", "whole grains", "lentils"]
+    nonveg_foods = veg_foods + ["eggs", "fish", "grilled chicken"]
+
+    diet["allowed_foods"] = veg_foods if food_type == "Vegetarian" else nonveg_foods
 
     if "diabetes" in text:
         diet["condition"].append("Diabetes")
-        diet["restricted_foods"].append("sugar")
-        diet["diet_plan"].append("Follow a diabetic-friendly low sugar diet.")
-        diet["lifestyle_advice"].append("Walk daily for 30 minutes.")
+        diet["noticed_foods"] = "Low sugar foods recommended"
+        diet["restricted_foods"].append("Sugar")
+        diet["diet_plan"].append("Low sugar, low glycemic index diet.")
+        diet["lifestyle_advice"].append("Daily walking for 30 minutes.")
 
     if "cholesterol" in text:
         diet["condition"].append("High Cholesterol")
-        diet["restricted_foods"].append("oily food")
-        diet["diet_plan"].append("Increase fiber intake and avoid fried foods.")
+        diet["restricted_foods"].append("Fried food")
+        diet["diet_plan"].append("Increase fiber intake.")
 
     if "blood pressure" in text or "hypertension" in text:
         diet["condition"].append("Hypertension")
-        diet["restricted_foods"].append("salt")
-        diet["diet_plan"].append("Reduce sodium intake.")
-        diet["lifestyle_advice"].append("Practice stress management.")
+        diet["restricted_foods"].append("Excess salt")
+        diet["diet_plan"].append("Low sodium diet.")
+        diet["lifestyle_advice"].append("Stress management and regular exercise.")
 
     if not diet["condition"]:
         diet["condition"].append("General Health")
@@ -103,8 +111,55 @@ def generate_diet(text):
         "lifestyle_advice": " ".join(diet["lifestyle_advice"])
     }
 
+# -------------------- OUTPUT FORMATTING (SIR STYLE) --------------------
+def format_output(diet, patient):
+    output = f"""
+Patient: {patient}
+Listing 1: Sample Diet Plan from AI-NutritionalCare
+
+Medical Condition: {diet['condition']}
+
+Allowed Foods:
+- {', '.join(diet['allowed_foods'])}
+
+Restricted Foods:
+- {', '.join(diet['restricted_foods'])}
+
+Diet Plan:
+{diet['diet_plan']}
+
+Lifestyle Advice:
+{diet['lifestyle_advice']}
+"""
+    return output.strip()
+
+# -------------------- PDF GENERATION --------------------
+def generate_pdf(text):
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    y = height - 40
+    for line in text.split("\n"):
+        c.drawString(40, y, line)
+        y -= 15
+        if y < 40:
+            c.showPage()
+            y = height - 40
+
+    c.save()
+    buffer.seek(0)
+    return buffer
+
 # -------------------- USER INPUT UI --------------------
 st.subheader("📄 Upload Medical Report")
+
+patient_name = st.text_input("👤 Patient Name", placeholder="Enter patient name")
+
+food_type = st.radio(
+    "🥦 Food Preference",
+    ["Vegetarian", "Non-Vegetarian"]
+)
 
 uploaded_file = st.file_uploader(
     "Upload PDF / Image / TXT / CSV",
@@ -118,35 +173,41 @@ manual_text = st.text_area(
 
 process_btn = st.button("🔍 Generate Diet Recommendation")
 
-# -------------------- PIPELINE EXECUTION --------------------
+# -------------------- PIPELINE --------------------
 if process_btn:
     if uploaded_file is None and manual_text.strip() == "":
-        st.warning("⚠️ Please upload a file or enter text.")
+        st.warning("Please upload a file or enter text.")
     else:
-        st.success("✅ Processing input...")
+        if patient_name.strip() == "":
+            patient_name = "Anonymous Patient"
 
         if uploaded_file:
             text = extract_text(uploaded_file)
         else:
             text = manual_text
 
-        st.subheader("📝 Extracted Text")
-        st.write(text[:1000])
+        diet = generate_diet(text, food_type)
+        formatted_output = format_output(diet, patient_name)
 
-        st.subheader("🩺 Health Status")
-        st.info("Health condition inferred using medical text analysis.")
+        st.subheader("🧾 Final Diet Plan")
+        st.code(formatted_output)
 
-        diet = generate_diet(text)
-
-        st.subheader("🍽️ Personalized Diet Recommendation")
-        st.json(diet)
-
+        # JSON Download
         st.download_button(
-            label="⬇️ Download Diet Plan (JSON)",
+            "⬇️ Download JSON",
             data=pd.Series(diet).to_json(),
-            file_name="diet_plan.json",
+            file_name=f"{patient_name}_DietPlan.json",
             mime="application/json"
         )
 
+        # PDF Download
+        pdf_file = generate_pdf(formatted_output)
+        st.download_button(
+            "⬇️ Download PDF",
+            data=pdf_file,
+            file_name=f"{patient_name}_DietPlan.pdf",
+            mime="application/pdf"
+        )
+
 st.markdown("---")
-st.caption("© AI-NutriCare | End-to-End NLP-Based Diet Recommendation System")
+st.caption("© AI-NutritionalCare | End-to-End Deployed Diet Recommendation System")
