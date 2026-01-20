@@ -15,28 +15,6 @@ st.set_page_config(
     layout="centered"
 )
 
-# --------------------------------------------------
-# SOFT GRADIENT BACKGROUND (OPTION 2 - SUBTLE)
-# --------------------------------------------------
-st.markdown(
-    """
-    <style>
-    .stApp {
-        background: linear-gradient(to bottom, #f6fff8, #ffffff);
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# --------------------------------------------------
-# HEADER IMAGE (OPTION 1 - SAFE & CLASSY)
-# --------------------------------------------------
-st.image(
-    "https://images.unsplash.com/photo-1498837167922-ddd27525d352",
-    use_column_width=True
-)
-
 st.title("🥗 AI-NutritionalCare")
 st.caption("AI-driven Personalized Diet Recommendation System")
 st.divider()
@@ -89,7 +67,7 @@ def extract_conditions(text):
     return conditions if conditions else ["General Health"]
 
 # --------------------------------------------------
-# MEALS (NO INGREDIENTS / NO COOKING STEPS)
+# MEALS (NO INGREDIENTS, NO COOKING)
 # --------------------------------------------------
 VEG_MEALS = [
     "Vegetable Khichdi","Chapati & Veg Sabzi","Vegetable Upma","Oats Porridge",
@@ -139,7 +117,6 @@ def generate_pdf(patient, conditions, plan):
             c.showPage()
             y = height - 40
 
-        c.setFont("Helvetica", 11)
         c.drawString(40, y, f"Day {i}: {food}")
         y -= 18
 
@@ -150,7 +127,11 @@ def generate_pdf(patient, conditions, plan):
 # --------------------------------------------------
 # INPUT UI
 # --------------------------------------------------
-uploaded = st.file_uploader("📄 Upload Medical Report (PDF / CSV / TXT)", type=["pdf","csv","txt"])
+uploaded = st.file_uploader(
+    "📄 Upload Medical Report (PDF / CSV / TXT)",
+    type=["pdf", "csv", "txt"]
+)
+
 preference = st.radio("🥦 Food Preference", ["Vegetarian", "Non-Vegetarian"])
 run = st.button("✨ Generate Diet Recommendation")
 
@@ -175,7 +156,7 @@ if run:
 """)
 
     st.subheader("📅 1-Month Diet Plan (Day-wise)")
-    tabs = st.tabs(["Week 1","Week 2","Week 3","Week 4"])
+    tabs = st.tabs(["Week 1", "Week 2", "Week 3", "Week 4"])
 
     idx = 0
     for tab in tabs:
