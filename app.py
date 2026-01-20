@@ -2,18 +2,42 @@ import streamlit as st
 import pandas as pd
 import pdfplumber
 import re
+import json
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
 # --------------------------------------------------
-# PAGE CONFIG (DO NOT CHANGE)
+# PAGE CONFIG
 # --------------------------------------------------
 st.set_page_config(
     page_title="AI-NutritionalCare",
     page_icon="🥗",
     layout="centered"
 )
+
+st.markdown("""
+<style>
+.card {
+    background-color: #f8fbff;
+    padding: 18px;
+    border-radius: 14px;
+    margin-bottom: 16px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+.day {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1f4fd8;
+}
+.recipe {
+    background-color: #eef6ff;
+    padding: 12px;
+    border-radius: 10px;
+    margin-top: 10px;
+}
+</style>
+""", unsafe_allow_html=True)
 
 st.title("🥗 AI-NutritionalCare")
 st.caption("AI-driven Personalized Diet Recommendation System")
@@ -66,48 +90,70 @@ def extract_conditions(text):
         conditions.append("Hypertension")
     return conditions if conditions else ["General Health"]
 
-
 # --------------------------------------------------
-# DIET DATA (BEGINNER-LEVEL RECIPES)
+# 28 UNIQUE MEALS (NO REPETITION)
 # --------------------------------------------------
 VEG_MEALS = [
-    ("Vegetable Khichdi",
-     "Rice, moong dal, carrot, beans, turmeric, salt",
-     "Wash rice and dal. Add vegetables and spices. Pressure cook with water for 3 whistles."),
-    ("Chapati & Mixed Veg Sabzi",
-     "Wheat flour, cabbage, carrot, onion, oil",
-     "Knead dough with water. Roll and cook chapati. Stir-fry vegetables with oil and salt."),
-    ("Vegetable Upma",
-     "Rava, onion, carrot, beans, mustard seeds",
-     "Dry roast rava. Temper mustard seeds. Add vegetables, water, then rava. Cook till fluffy."),
-    ("Oats Porridge",
-     "Oats, water/milk, salt",
-     "Boil water. Add oats. Cook 5 minutes while stirring."),
+    ("Vegetable Khichdi","Rice, dal, vegetables","Wash rice & dal. Pressure cook with vegetables and salt."),
+    ("Chapati & Cabbage Sabzi","Wheat flour, cabbage","Knead dough. Roll chapati. Stir-fry cabbage."),
+    ("Vegetable Upma","Rava, vegetables","Roast rava. Cook with vegetables & water."),
+    ("Oats Porridge","Oats, water","Boil water. Add oats. Cook 5 minutes."),
+    ("Curd Rice","Rice, curd","Mix cooked rice with curd and salt."),
+    ("Vegetable Dalia","Broken wheat, vegetables","Pressure cook till soft."),
+    ("Paneer Bhurji","Paneer, onion","Crumble paneer. Cook with onion."),
+    ("Lemon Rice","Rice, lemon","Mix lemon juice with rice."),
+    ("Idli & Sambar","Idli batter","Steam idli. Prepare sambar."),
+    ("Vegetable Poha","Poha, peanuts","Cook poha with onion."),
+    ("Rajma Rice","Rajma, rice","Cook rajma curry. Serve with rice."),
+    ("Stuffed Paratha","Wheat flour, potato","Stuff potato. Cook paratha."),
+    ("Vegetable Pulao","Rice, vegetables","Cook rice with vegetables."),
+    ("Sprouts Salad","Sprouts","Boil sprouts. Add lemon."),
+    ("Tomato Soup","Tomato","Boil & blend tomatoes."),
+    ("Vegetable Sandwich","Bread, vegetables","Toast with vegetables."),
+    ("Masala Oats","Oats, vegetables","Cook oats with spices."),
+    ("Curd Bowl","Curd, cucumber","Mix curd & veggies."),
+    ("Veg Fried Rice","Rice, vegetables","Stir fry vegetables & rice."),
+    ("Paneer Salad","Paneer","Mix paneer & vegetables."),
+    ("Vegetable Soup","Vegetables","Boil vegetables."),
+    ("Ragi Porridge","Ragi flour","Cook slowly with water."),
+    ("Cabbage Fry","Cabbage","Stir fry lightly."),
+    ("Besan Chilla","Besan","Cook batter on pan."),
+    ("Dal & Chapati","Dal","Serve dal with chapati."),
+    ("Vegetable Cutlet","Vegetables","Mash, shape & shallow fry."),
+    ("Bottle Gourd Curry","Lauki","Cook with spices."),
+    ("Fruit Bowl","Fruits","Chop and serve.")
 ]
 
 NONVEG_MEALS = [
-    ("Egg Omelette & Toast",
-     "Eggs, onion, oil, salt",
-     "Beat eggs with onion. Pour into pan. Cook both sides."),
-    ("Grilled Chicken & Rice",
-     "Chicken, rice, pepper, salt",
-     "Boil rice. Grill chicken with spices on pan."),
-    ("Fish Curry & Rice",
-     "Fish, tomato, spices, oil",
-     "Cook fish with tomato and spices. Serve with rice."),
-    ("Boiled Eggs & Fruits",
-     "Eggs, apple, banana",
-     "Boil eggs for 10 minutes. Peel and serve with fruits."),
+    ("Egg Omelette","Eggs, onion","Beat eggs and cook."),
+    ("Grilled Chicken","Chicken","Grill with spices."),
+    ("Fish Curry","Fish","Cook with tomato gravy."),
+    ("Boiled Eggs","Eggs","Boil 10 minutes."),
+    ("Chicken Soup","Chicken","Boil with spices."),
+    ("Egg Fried Rice","Rice, egg","Stir fry egg and rice."),
+    ("Grilled Fish","Fish","Pan grill."),
+    ("Chicken Sandwich","Bread, chicken","Toast sandwich."),
+    ("Egg Bhurji","Eggs","Scramble with onion."),
+    ("Chicken Pulao","Rice, chicken","Cook together."),
+    ("Fish Fry","Fish","Shallow fry."),
+    ("Chicken Curry","Chicken","Cook in gravy."),
+    ("Egg Curry","Eggs","Cook boiled eggs."),
+    ("Chicken Salad","Chicken","Mix with veggies."),
+    ("Fish Soup","Fish","Boil lightly."),
+    ("Egg Toast","Eggs","Serve on toast."),
+    ("Chicken Wrap","Chapati","Wrap chicken."),
+    ("Grilled Chicken Veg","Chicken","Grill with veggies."),
+    ("Fish Rice Bowl","Fish","Serve with rice."),
+    ("Egg Salad","Eggs","Mix chopped eggs."),
+    ("Chicken Stir Fry","Chicken","Quick fry."),
+    ("Fish Lemon Curry","Fish","Cook with lemon."),
+    ("Egg Rice","Eggs","Serve scrambled eggs."),
+    ("Chicken Stew","Chicken","Slow cook."),
+    ("Fish Stew","Fish","Cook in broth."),
+    ("Egg Paratha","Eggs","Cook inside paratha."),
+    ("Chicken Cutlet","Chicken","Shallow fry."),
+    ("Protein Bowl","Chicken & eggs","Serve together.")
 ]
-
-
-def generate_month_plan(pref):
-    meals = VEG_MEALS if pref == "Vegetarian" else NONVEG_MEALS
-    month = []
-    for i in range(28):
-        month.append(meals[i % len(meals)])
-    return month
-
 
 # --------------------------------------------------
 # PDF GENERATOR
@@ -116,8 +162,8 @@ def generate_pdf(patient, conditions, plan):
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
-
     y = height - 40
+
     c.setFont("Helvetica-Bold", 14)
     c.drawString(40, y, "AI-NutritionalCare Diet Report")
     y -= 30
@@ -130,32 +176,29 @@ def generate_pdf(patient, conditions, plan):
 
     day = 1
     for food, ing, steps in plan:
-        if y < 100:
+        if y < 120:
             c.showPage()
             y = height - 40
 
         c.setFont("Helvetica-Bold", 11)
         c.drawString(40, y, f"Day {day}: {food}")
         y -= 15
-
         c.setFont("Helvetica", 10)
         c.drawString(50, y, f"Ingredients: {ing}")
         y -= 15
         c.drawString(50, y, f"Steps: {steps}")
         y -= 20
-
         day += 1
 
     c.save()
     buffer.seek(0)
     return buffer
 
-
 # --------------------------------------------------
 # INPUT UI
 # --------------------------------------------------
-uploaded = st.file_uploader("📄 Upload Medical Report (PDF / CSV / TXT)", type=["pdf", "csv", "txt"])
-preference = st.radio("🥦 Food Preference", ["Vegetarian", "Non-Vegetarian"])
+uploaded = st.file_uploader("📄 Upload Medical Report (PDF / CSV / TXT)", type=["pdf","csv","txt"])
+preference = st.radio("🥦 Food Preference", ["Vegetarian","Non-Vegetarian"])
 run = st.button("✨ Generate Diet Recommendation")
 
 # --------------------------------------------------
@@ -169,9 +212,9 @@ if run:
     raw_text = extract_text(uploaded)
     patient = extract_patient_name(raw_text)
     conditions = extract_conditions(raw_text)
-    month_plan = generate_month_plan(preference)
 
-    # ---------- Sir-Style Output ----------
+    meals = VEG_MEALS if preference == "Vegetarian" else NONVEG_MEALS
+
     st.subheader("📄 Output")
     st.markdown(f"""
 **Patient:** {patient}  
@@ -179,45 +222,45 @@ if run:
 **Listing 1:** Sample Diet Plan from AI-NutritionalCare
 """)
 
-    # ---------- Month Plan ----------
-    st.subheader("📅 1-Month Diet Plan (Day-wise with Recipes)")
-    tabs = st.tabs(["Week 1", "Week 2", "Week 3", "Week 4"])
+    st.subheader("📅 1-Month Diet Plan (Day-wise)")
+    day = 1
+    for week in range(4):
+        st.markdown(f"### Week {week+1}")
+        for i in range(7):
+            food, ing, steps = meals[week*7+i]
+            st.markdown(f"""
+<div class="card">
+<div class="day">Day {day}: {food}</div>
+<b>Ingredients:</b> {ing}
+<div class="recipe"><b>How to Cook:</b> {steps}</div>
+</div>
+""", unsafe_allow_html=True)
+            day += 1
 
-    day_index = 0
-    for w, tab in enumerate(tabs):
-        with tab:
-            for d in range(7):
-                food, ing, steps = month_plan[day_index]
-                with st.expander(f"🍽️ Day {day_index + 1}: {food}"):
-                    st.markdown("**🧺 Ingredients**")
-                    st.write(ing)
-                    st.markdown("**👩‍🍳 How to Cook (Beginner Friendly)**")
-                    for i, s in enumerate(steps.split("."), 1):
-                        if s.strip():
-                            st.write(f"{i}. {s.strip()}")
-                day_index += 1
-
-    # ---------- Downloads ----------
+    # Downloads
     diet_json = {
         "patient": patient,
         "conditions": conditions,
         "diet_plan": [
-            {"day": i + 1, "meal": m[0], "ingredients": m[1], "steps": m[2]}
-            for i, m in enumerate(month_plan)
+            {"day": i+1, "meal": m[0], "ingredients": m[1], "steps": m[2]}
+            for i, m in enumerate(meals)
         ]
     }
 
     st.download_button(
         "⬇️ Download JSON",
-        data=pd.Series(diet_json).to_json(),
+        json.dumps(diet_json, indent=2),
         file_name="diet_plan.json",
         mime="application/json"
     )
 
-    pdf_file = generate_pdf(patient, conditions, month_plan)
+    pdf = generate_pdf(patient, conditions, meals)
     st.download_button(
         "⬇️ Download PDF",
-        data=pdf_file,
-        file_name=f"{patient.replace(' ', '_')}_DietPlan.pdf",
+        pdf,
+        file_name=f"{patient.replace(' ','_')}_DietPlan.pdf",
         mime="application/pdf"
     )
+
+st.divider()
+st.caption("© AI-NutritionalCare | Internship Final Submission")
