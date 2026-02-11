@@ -50,6 +50,44 @@ st.markdown("""
     color: white;
 }
 
+/* Hide white boxes */
+.element-container:has(> .stMarkdown > div > div[data-testid="stMarkdownContainer"]:empty) {
+    display: none;
+}
+
+section[data-testid="stSidebar"] + div.block-container::before,
+section[data-testid="stSidebar"] + div.block-container::after {
+    display: none;
+}
+
+/* Remove extra padding and margins */
+.element-container {
+    margin-bottom: 0 !important;
+}
+
+div[data-testid="stVerticalBlock"] > div:has(> div > div > div > div[style*="display: none"]) {
+    display: none;
+}
+
+/* Remove streamlit branding elements */
+footer {
+    display: none;
+}
+
+#MainMenu {
+    display: none;
+}
+
+header {
+    visibility: hidden;
+}
+
+/* Improve overall spacing */
+.main .block-container {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
 /* Main header container */
 .main-header {
     background: rgba(255, 255, 255, 0.1);
@@ -90,6 +128,13 @@ st.markdown("""
     animation: fadeInUp 0.6s ease-out 0.2s both;
 }
 
+.upload-container label {
+    color: #2d3748 !important;
+    font-weight: 600 !important;
+    font-size: 1.2rem !important;
+    margin-bottom: 1rem !important;
+}
+
 /* File uploader styling */
 [data-testid="stFileUploader"] {
     background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
@@ -97,6 +142,10 @@ st.markdown("""
     padding: 2rem;
     border: 3px dashed rgba(255, 255, 255, 0.5);
     transition: all 0.3s ease;
+}
+
+[data-testid="stFileUploader"] label {
+    color: white !important;
 }
 
 [data-testid="stFileUploader"]:hover {
@@ -194,16 +243,36 @@ st.markdown("""
     margin: 1rem 0;
 }
 
+.stSelectbox label {
+    color: white !important;
+    font-weight: 600 !important;
+    font-size: 1.1rem !important;
+    margin-bottom: 0.5rem !important;
+    display: block !important;
+}
+
 .stSelectbox > div > div {
     background: white;
     border-radius: 12px;
     border: 2px solid #e0e7ff;
     transition: all 0.3s ease;
+    font-size: 1rem;
+    padding: 0.5rem;
 }
 
 .stSelectbox > div > div:hover {
     border-color: #764ba2;
-    box-shadow: 0 4px 12px rgba(118, 75, 162, 0.2);
+    box-shadow: 0 4px 12px rgba(118, 75, 162, 0.3);
+}
+
+.stSelectbox [data-baseweb="select"] {
+    background-color: white;
+}
+
+.stSelectbox [data-baseweb="select"] > div {
+    background-color: white;
+    color: #2d3748;
+    font-weight: 500;
 }
 
 /* Download section */
@@ -214,6 +283,24 @@ st.markdown("""
     margin: 2rem 0;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
     animation: fadeInUp 0.6s ease-out 0.6s both;
+}
+
+/* Selection section styling */
+.selection-section {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.section-label {
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: block;
 }
 
 /* Animations */
@@ -300,8 +387,6 @@ st.markdown("""
     <p class="subtitle">Your Personalized AI-Powered Diet Companion</p>
 </div>
 """, unsafe_allow_html=True)
-
-# ================================
 # HELPERS
 # ================================
 def extract_text(file):
@@ -423,11 +508,18 @@ if st.session_state.generated:
     st.markdown('</div>', unsafe_allow_html=True)
 
     # Week and Day Selection
+    st.markdown('<div class="selection-section">', unsafe_allow_html=True)
+    st.markdown('<p class="section-label">📅 Select Your Plan Timeline</p>', unsafe_allow_html=True)
+    
     col1, col2 = st.columns(2)
     with col1:
-        week = st.selectbox("📆 Select Week", ["Week 1", "Week 2", "Week 3", "Week 4"])
+        st.markdown('<p style="color: white; font-weight: 600; margin-bottom: 0.5rem;">📆 Week</p>', unsafe_allow_html=True)
+        week = st.selectbox("Week", ["Week 1", "Week 2", "Week 3", "Week 4"], label_visibility="collapsed")
     with col2:
-        day = st.selectbox("🗓️ Select Day", ["Day 1","Day 2","Day 3","Day 4","Day 5","Day 6","Day 7"])
+        st.markdown('<p style="color: white; font-weight: 600; margin-bottom: 0.5rem;">🗓️ Day</p>', unsafe_allow_html=True)
+        day = st.selectbox("Day", ["Day 1","Day 2","Day 3","Day 4","Day 5","Day 6","Day 7"], label_visibility="collapsed")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # ================================
     # ENHANCED DIET PLAN DISPLAY
