@@ -2,6 +2,7 @@ import streamlit as st
 import pdfplumber
 import pandas as pd
 import re
+import random
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
@@ -14,18 +15,24 @@ if "patient" not in st.session_state:
     st.session_state.patient = ""
 if "conditions" not in st.session_state:
     st.session_state.conditions = []
+if "full_plan" not in st.session_state:
+    st.session_state.full_plan = {}
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 * {font-family: 'Inter', sans-serif !important;}
 .stApp {background: #f5f5f5 !important;}
 .main .block-container {max-width: 1000px !important; padding: 1rem !important;}
 #MainMenu, footer, header {display: none !important;}
-section[data-testid="stFileUploadDropzone"] {background: transparent !important;}
+section[data-testid="stSidebar"] {display: none !important;}
+.element-container {background: transparent !important; padding: 0 !important; margin: 0 !important;}
+div[data-testid="stVerticalBlock"] {gap: 0 !important; background: transparent !important;}
+.stMarkdown {background: transparent !important; margin: 0 !important;}
 .stButton > button {background: #2563eb !important; color: white !important; border: none !important; padding: 0.75rem 2rem !important; border-radius: 8px !important; font-weight: 600 !important; width: 100% !important;}
 .stDownloadButton > button {background: #059669 !important; color: white !important; border: none !important; padding: 0.75rem 2rem !important; border-radius: 8px !important; font-weight: 600 !important; width: 100% !important;}
-.stSelectbox label {color: #000000 !important; font-weight: 600 !important;}
+[data-testid="stFileUploader"] {background: transparent !important; border: 2px dashed #cbd5e1 !important; border-radius: 8px !important; padding: 1.5rem !important;}
+.stSelectbox label {color: #000 !important; font-weight: 600 !important;}
 .stSelectbox div[data-baseweb="select"] {background-color: #1e293b !important;}
 .stSelectbox div[data-baseweb="select"] > div {background-color: #1e293b !important; color: white !important; font-weight: 500 !important;}
 .stSelectbox svg {fill: white !important;}
@@ -39,44 +46,67 @@ h1, h2, h3 {color: #000 !important;}
 </style>
 """, unsafe_allow_html=True)
 
-# 28 DAYS OF VARIED MEAL PLANS
-MEAL_PLANS = {
-    1: {"Breakfast": "Oats Porridge with Banana, Almonds", "Lunch": "Brown Rice, Dal, Cucumber Salad", "Dinner": "2 Rotis, Mix Veg Curry, Curd", "Snacks": "Apple, Green Tea"},
-    2: {"Breakfast": "2 Whole Wheat Chapatis, Mixed Veg Sabzi, Yogurt", "Lunch": "1 cup Brown Rice, Dal Tadka, Raita, Salad", "Dinner": "2 Rotis, Palak Paneer, Mixed Salad", "Snacks": "Roasted Chickpeas (30g), 1 Apple"},
-    3: {"Breakfast": "Poha with Peanuts, Lemon", "Lunch": "Quinoa, Rajma Curry, Salad", "Dinner": "2 Rotis, Bhindi Masala, Raita", "Snacks": "Carrot Sticks, Hummus"},
-    4: {"Breakfast": "Upma with Vegetables", "Lunch": "Brown Rice, Chana Dal, Stir-fry Veggies", "Dinner": "2 Rotis, Aloo Gobi, Salad", "Snacks": "Banana, Handful Nuts"},
-    5: {"Breakfast": "Idli (3), Sambar, Coconut Chutney", "Lunch": "Brown Rice, Moong Dal, Beetroot Salad", "Dinner": "2 Rotis, Baingan Bharta, Curd", "Snacks": "Orange, Walnuts"},
-    6: {"Breakfast": "Vegetable Dalia", "Lunch": "Whole Wheat Roti (2), Chole, Salad", "Dinner": "Brown Rice, Dal Fry, Cabbage Salad", "Snacks": "Pear, Green Tea"},
-    7: {"Breakfast": "Besan Chilla (2), Mint Chutney", "Lunch": "Brown Rice, Kadhi, Stir-fry Beans", "Dinner": "2 Rotis, Lauki Sabzi, Raita", "Snacks": "Guava, Almonds"},
-    8: {"Breakfast": "Oats Idli, Sambar", "Lunch": "Bajra Roti (2), Dal, Mixed Veg", "Dinner": "Brown Rice, Palak Dal, Tomato Salad", "Snacks": "Pomegranate, Cashews"},
-    9: {"Breakfast": "Ragi Dosa (2), Chutney", "Lunch": "Brown Rice, Toor Dal, Carrot Salad", "Dinner": "2 Rotis, Mushroom Curry, Curd", "Snacks": "Kiwi, Pistachios"},
-    10: {"Breakfast": "Vegetable Poha", "Lunch": "Whole Wheat Roti (2), Methi Dal, Salad", "Dinner": "Brown Rice, Aloo Matar, Raita", "Snacks": "Apple, Herbal Tea"},
-    11: {"Breakfast": "Moong Dal Chilla (2)", "Lunch": "Brown Rice, Arhar Dal, Cucumber Raita", "Dinner": "2 Rotis, Cauliflower Curry, Salad", "Snacks": "Mango Slices, Nuts"},
-    12: {"Breakfast": "Broken Wheat Upma", "Lunch": "Bajra Roti (2), Sambhar, Mixed Veg", "Dinner": "Brown Rice, Chana Dal, Beetroot Salad", "Snacks": "Papaya, Green Tea"},
-    13: {"Breakfast": "Vegetable Uttapam (2)", "Lunch": "Brown Rice, Masoor Dal, Onion Salad", "Dinner": "2 Rotis, Spinach Paneer, Curd", "Snacks": "Grapes, Walnuts"},
-    14: {"Breakfast": "Semolina Upma with Veggies", "Lunch": "Whole Wheat Roti (2), Rajma, Salad", "Dinner": "Brown Rice, Dal Tadka, Cabbage Slaw", "Snacks": "Orange, Almonds"},
-    15: {"Breakfast": "Oats Pancakes (2), Honey", "Lunch": "Brown Rice, Moong Dal, Tomato Salad", "Dinner": "2 Rotis, Baingan Curry, Raita", "Snacks": "Pear, Cashews"},
-    16: {"Breakfast": "Vegetable Vermicelli", "Lunch": "Bajra Roti (2), Chole, Mixed Salad", "Dinner": "Brown Rice, Arhar Dal, Cucumber Raita", "Snacks": "Banana, Pistachios"},
-    17: {"Breakfast": "Ragi Porridge with Nuts", "Lunch": "Brown Rice, Kadhi, Stir-fry Cabbage", "Dinner": "2 Rotis, Bhindi Fry, Curd", "Snacks": "Guava, Green Tea"},
-    18: {"Breakfast": "Besan Chilla (2) with Veggies", "Lunch": "Whole Wheat Roti (2), Dal Fry, Salad", "Dinner": "Brown Rice, Palak Dal, Onion Salad", "Snacks": "Apple, Walnuts"},
-    19: {"Breakfast": "Idli (3), Coconut Chutney", "Lunch": "Brown Rice, Toor Dal, Carrot Raita", "Dinner": "2 Rotis, Aloo Gobi, Mixed Salad", "Snacks": "Kiwi, Almonds"},
-    20: {"Breakfast": "Vegetable Poha with Lemon", "Lunch": "Bajra Roti (2), Methi Dal, Salad", "Dinner": "Brown Rice, Chana Dal, Beetroot Salad", "Snacks": "Orange, Nuts"},
-    21: {"Breakfast": "Moong Dal Dosa (2)", "Lunch": "Brown Rice, Masoor Dal, Cucumber Salad", "Dinner": "2 Rotis, Lauki Sabzi, Raita", "Snacks": "Pomegranate, Cashews"},
-    22: {"Breakfast": "Broken Wheat Porridge", "Lunch": "Whole Wheat Roti (2), Rajma, Mixed Veg", "Dinner": "Brown Rice, Dal Tadka, Tomato Salad", "Snacks": "Mango, Green Tea"},
-    23: {"Breakfast": "Oats Upma", "Lunch": "Brown Rice, Moong Dal, Onion Raita", "Dinner": "2 Rotis, Mushroom Curry, Salad", "Snacks": "Papaya, Walnuts"},
-    24: {"Breakfast": "Vegetable Dalia", "Lunch": "Bajra Roti (2), Chole, Carrot Salad", "Dinner": "Brown Rice, Arhar Dal, Cabbage Slaw", "Snacks": "Grapes, Almonds"},
-    25: {"Breakfast": "Ragi Idli (3), Sambar", "Lunch": "Brown Rice, Kadhi, Mixed Veg", "Dinner": "2 Rotis, Palak Paneer, Curd", "Snacks": "Pear, Pistachios"},
-    26: {"Breakfast": "Besan Pancakes (2)", "Lunch": "Whole Wheat Roti (2), Dal Fry, Salad", "Dinner": "Brown Rice, Chana Dal, Cucumber Raita", "Snacks": "Apple, Cashews"},
-    27: {"Breakfast": "Vegetable Vermicelli", "Lunch": "Brown Rice, Toor Dal, Beetroot Salad", "Dinner": "2 Rotis, Baingan Bharta, Raita", "Snacks": "Banana, Green Tea"},
-    28: {"Breakfast": "Oats Porridge with Berries", "Lunch": "Bajra Roti (2), Methi Dal, Mixed Salad", "Dinner": "Brown Rice, Dal Tadka, Tomato Salad", "Snacks": "Orange, Walnuts"}
-}
+# MEAL OPTIONS - Different meals for variety
+BREAKFAST_OPTIONS = [
+    "2 Whole Wheat Chapatis (50g each), Mixed Vegetable Sabzi, Yogurt",
+    "Oatmeal with Berries, Almonds, and Low-fat Milk",
+    "Poha with Vegetables, Peanuts, and Green Chutney",
+    "Idli (3pcs) with Sambar and Coconut Chutney",
+    "Upma with Vegetables and a Glass of Buttermilk",
+    "Vegetable Paratha (2) with Curd and Pickle",
+    "Moong Dal Cheela with Mint Chutney"
+]
 
-def extract_text(file):
+LUNCH_OPTIONS = [
+    "1 cup Brown Rice, Dal Tadka, Cucumber Raita, Salad",
+    "2 Rotis, Rajma Curry, Jeera Rice, Mixed Salad",
+    "Quinoa Pulao, Mixed Vegetable Curry, Raita",
+    "2 Multigrain Rotis, Chana Masala, Vegetable Salad",
+    "Brown Rice, Sambhar, Cabbage Poriyal, Curd",
+    "2 Rotis, Mix Veg Sabzi, Dal Fry, Salad",
+    "Millet Khichdi with Curd and Papad"
+]
+
+DINNER_OPTIONS = [
+    "2 Rotis, Palak Paneer, Mixed Vegetable Salad",
+    "Grilled Paneer, Quinoa, Stir-fried Vegetables",
+    "2 Rotis, Bhindi Masala, Tomato Soup",
+    "Brown Rice, Moong Dal, Bottle Gourd Curry",
+    "2 Chapatis, Tofu Curry, Green Salad",
+    "Vegetable Soup, Grilled Vegetables, 1 Roti",
+    "2 Rotis, Baingan Bharta, Sprouts Salad"
+]
+
+SNACKS_OPTIONS = [
+    "Roasted Chickpeas (30g), 1 Apple",
+    "Mixed Nuts (30g), 1 Orange",
+    "Carrot Sticks with Hummus",
+    "Greek Yogurt with Berries",
+    "Sprouts Salad with Lemon",
+    "Roasted Makhana (30g), Green Tea",
+    "Fruit Salad (Apple, Banana, Pomegranate)"
+]
+
+NOTES_OPTIONS = [
+    "Drink at least 8–10 glasses of water. Avoid sugary drinks.",
+    "Stay hydrated. Limit salt intake. Include a 30-min walk.",
+    "Avoid processed foods. Practice portion control.",
+    "Include fiber-rich foods. Limit oil and sugar.",
+    "Eat at regular intervals. Avoid late-night meals."
+]
+
+def extract_text_from_file(file):
     text = ""
-    with pdfplumber.open(file) as pdf:
-        for page in pdf.pages:
-            if page.extract_text():
-                text += page.extract_text() + "\n"
+    if file.type == "application/pdf":
+        with pdfplumber.open(file) as pdf:
+            for page in pdf.pages:
+                if page.extract_text():
+                    text += page.extract_text() + "\n"
+    elif file.type == "text/plain":
+        text = file.read().decode("utf-8")
+    elif file.type == "text/csv":
+        df = pd.read_csv(file)
+        text = df.to_string()
     return text
 
 def extract_patient_name(text):
@@ -95,25 +125,48 @@ def extract_conditions(text):
     if "hypertension" in t: cond.append("Hypertension")
     return cond or ["General Health"]
 
-def generate_pdf(patient, conditions, diet):
+def generate_28_day_plan():
+    plan = {}
+    for day in range(1, 29):
+        plan[f"Day {day}"] = {
+            "Breakfast": random.choice(BREAKFAST_OPTIONS),
+            "Lunch": random.choice(LUNCH_OPTIONS),
+            "Dinner": random.choice(DINNER_OPTIONS),
+            "Snacks": random.choice(SNACKS_OPTIONS),
+            "Notes": random.choice(NOTES_OPTIONS)
+        }
+    return plan
+
+def generate_pdf(patient, conditions, full_plan):
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     y = 800
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(40, y, "AI-NutritionalCare Diet Report")
+    
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(40, y, "AI-NutritionalCare - 28 Day Diet Plan")
     y -= 30
+    
     c.setFont("Helvetica", 11)
     c.drawString(40, y, f"Patient: {patient}")
     y -= 20
-    c.drawString(40, y, f"Medical Conditions: {', '.join(conditions)}")
+    c.drawString(40, y, f"Conditions: {', '.join(conditions)}")
     y -= 30
-    for k, v in diet.items():
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(40, y, k)
-        y -= 15
-        c.setFont("Helvetica", 10)
-        c.drawString(50, y, v)
-        y -= 20
+    
+    for day_name, meals in full_plan.items():
+        if y < 100:
+            c.showPage()
+            y = 800
+        
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(40, y, day_name)
+        y -= 18
+        
+        c.setFont("Helvetica", 9)
+        for meal, food in meals.items():
+            c.drawString(50, y, f"{meal}: {food[:80]}")
+            y -= 14
+        y -= 10
+    
     c.save()
     buffer.seek(0)
     return buffer
@@ -125,27 +178,25 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-uploaded = st.file_uploader("📄 Upload Medical Report (PDF)", type=["pdf"], label_visibility="collapsed")
-st.markdown('<div style="background: white; padding: 1.75rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin: 1rem 0;">', unsafe_allow_html=True)
-if st.button("✨ Generate Diet Recommendation"):
+st.markdown('<div style="background: white; padding: 1.75rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1rem;">', unsafe_allow_html=True)
+uploaded = st.file_uploader("📄 Upload Medical Report (PDF/TXT/CSV)", type=["pdf", "txt", "csv"])
+if st.button("✨ Generate 28-Day Diet Plan"):
     if uploaded:
-        with st.spinner("Analyzing..."):
-            text = extract_text(uploaded)
+        with st.spinner("Generating your personalized 28-day meal plan..."):
+            text = extract_text_from_file(uploaded)
             st.session_state.patient = extract_patient_name(text)
             st.session_state.conditions = extract_conditions(text)
+            st.session_state.full_plan = generate_28_day_plan()
             st.session_state.generated = True
-        st.success("✅ 28-Day Diet Plan Generated!")
+        st.success("✅ 28-day diet plan generated!")
     else:
         st.warning("⚠️ Please upload a report")
 st.markdown('</div>', unsafe_allow_html=True)
 
 if st.session_state.generated:
     
-    st.markdown("""
-    <div style="background: white; padding: 1.75rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1rem;">
-        <h2 style="font-size: 1.5rem; font-weight: 700; color: #000; margin: 0 0 1rem 0;">📋 Patient Summary</h2>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown('<div style="background: white; padding: 1.75rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1rem;">', unsafe_allow_html=True)
+    st.subheader("📋 Patient Summary")
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("👤 Patient", st.session_state.patient)
@@ -153,45 +204,44 @@ if st.session_state.generated:
         st.metric("🏥 Condition", ', '.join(st.session_state.conditions))
     with col3:
         st.metric("📅 Duration", "28 Days")
+    st.markdown('</div>', unsafe_allow_html=True)
     
-    st.markdown('<div style="background: #1e293b; padding: 1.75rem; border-radius: 12px; margin: 1rem 0;"><h3 style="color: white !important; margin: 0 0 1rem 0; font-size: 1.25rem;">📅 Select Timeline</h3></div>', unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    with col1:
-        week = st.selectbox("Week", ["Week 1", "Week 2", "Week 3", "Week 4"], label_visibility="collapsed")
-    with col2:
-        day_num = st.selectbox("Day", list(range(1, 29)), format_func=lambda x: f"Day {x}", label_visibility="collapsed")
+    st.markdown('<div style="background: #1e293b; padding: 1.75rem; border-radius: 12px; margin-bottom: 1rem;"><h3 style="color: white !important; margin: 0 0 1rem 0; font-size: 1.25rem;">📅 Select Day</h3></div>', unsafe_allow_html=True)
     
-    plan = MEAL_PLANS[day_num]
+    day_options = [f"Day {i}" for i in range(1, 29)]
+    selected_day = st.selectbox("Choose Day", day_options)
     
-    st.markdown(f"""
-    <div style="background: white; padding: 1.75rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin: 1rem 0;">
-        <h2 style="font-size: 1.5rem; font-weight: 700; color: #000; margin: 0 0 1rem 0;">🍽️ Day {day_num} Diet Plan</h2>
-    </div>
-    """, unsafe_allow_html=True)
+    day_plan = st.session_state.full_plan[selected_day]
     
+    st.markdown('<div style="background: white; padding: 1.75rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1rem; margin-top: 1rem;">', unsafe_allow_html=True)
+    st.subheader(f"🍽️ {selected_day} Diet Plan")
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("### 🍳 Breakfast")
-        st.info(plan["Breakfast"])
+        st.info(day_plan["Breakfast"])
         st.markdown("### 🍛 Lunch")
-        st.info(plan["Lunch"])
+        st.info(day_plan["Lunch"])
     with col2:
         st.markdown("### 🌙 Dinner")
-        st.info(plan["Dinner"])
+        st.info(day_plan["Dinner"])
         st.markdown("### 🍎 Snacks")
-        st.info(plan["Snacks"])
+        st.info(day_plan["Snacks"])
+    st.success(f"💡 {day_plan['Notes']}")
+    st.markdown('</div>', unsafe_allow_html=True)
     
-    st.success("💡 Drink 8-10 glasses of water daily. Avoid sugary drinks and processed foods.")
-    
-    st.markdown("""
-    <div style="background: white; padding: 1.75rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin: 1rem 0;">
-        <h2 style="font-size: 1.5rem; font-weight: 700; color: #000; margin: 0 0 1rem 0;">📥 Download</h2>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown('<div style="background: white; padding: 1.75rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1rem;">', unsafe_allow_html=True)
+    st.subheader("📥 Download Complete 28-Day Plan")
     col1, col2 = st.columns(2)
     with col1:
-        st.download_button("📄 Download JSON", data=pd.Series({"patient": st.session_state.patient, "conditions": st.session_state.conditions, "day": day_num, "plan": plan}).to_json(), file_name=f"day{day_num}_plan.json", mime="application/json")
+        json_data = {
+            "patient": st.session_state.patient,
+            "conditions": st.session_state.conditions,
+            "duration": "28 Days",
+            "meal_plan": st.session_state.full_plan
+        }
+        st.download_button("📄 Download JSON (All 28 Days)", data=pd.Series(json_data).to_json(indent=2), file_name="28_day_diet_plan.json", mime="application/json")
     with col2:
-        st.download_button("📑 Download PDF", data=generate_pdf(st.session_state.patient, st.session_state.conditions, plan), file_name=f"day{day_num}_plan.pdf", mime="application/pdf")
+        st.download_button("📑 Download PDF (All 28 Days)", data=generate_pdf(st.session_state.patient, st.session_state.conditions, st.session_state.full_plan), file_name="28_day_diet_plan.pdf", mime="application/pdf")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown('<div style="background: white; padding: 1.25rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center; margin-top: 1rem;"><p style="color: #666; margin: 0; font-size: 0.9rem;">Made with ❤️ by AI-NutritionalCare Team</p></div>', unsafe_allow_html=True)
+st.markdown('<div style="background: white; padding: 1.25rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center;"><p style="color: #666; margin: 0; font-size: 0.9rem;">Made with ❤️ by AI-NutritionalCare Team</p></div>', unsafe_allow_html=True)
