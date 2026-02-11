@@ -20,54 +20,33 @@ if "full_plan" not in st.session_state:
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 * {font-family: 'Inter', sans-serif !important;}
-.stApp {background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;}
-.main .block-container {max-width: 900px !important; padding: 2rem 1rem !important;}
+.stApp {background: #f5f5f5 !important;}
+.main .block-container {max-width: 1000px !important; padding: 1rem !important;}
 #MainMenu, footer, header {display: none !important;}
-
-.stButton > button {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
-    color: white !important; border: none !important; padding: 0.875rem 2.5rem !important;
-    border-radius: 50px !important; font-weight: 600 !important; width: 100% !important;
-    font-size: 1.1rem !important; box-shadow: 0 4px 15px rgba(245,87,108,0.4) !important;
-    transition: all 0.3s ease !important;
-}
-.stButton > button:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 20px rgba(245,87,108,0.6) !important;
-}
-
-.stDownloadButton > button {
-    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
-    color: white !important; border: none !important; padding: 0.75rem 2rem !important;
-    border-radius: 50px !important; font-weight: 600 !important; width: 100% !important;
-    box-shadow: 0 4px 15px rgba(56,239,125,0.4) !important;
-}
-
-[data-testid="stFileUploader"] {
-    background: rgba(255,255,255,0.95) !important;
-    border: 2px dashed #a855f7 !important;
-    border-radius: 16px !important; padding: 2rem !important;
-}
-
-.stSelectbox label {color: white !important; font-weight: 600 !important; font-size: 1rem !important;}
-.stSelectbox div[data-baseweb="select"] {background-color: rgba(30,41,59,0.9) !important; border-radius: 12px !important;}
-.stSelectbox div[data-baseweb="select"] > div {background-color: transparent !important; color: white !important; font-weight: 500 !important;}
+section[data-testid="stSidebar"] {display: none !important;}
+.element-container {background: transparent !important; padding: 0 !important; margin: 0 !important;}
+div[data-testid="stVerticalBlock"] {gap: 0 !important; background: transparent !important;}
+.stMarkdown {background: transparent !important; margin: 0 !important;}
+.stButton > button {background: #2563eb !important; color: white !important; border: none !important; padding: 0.75rem 2rem !important; border-radius: 8px !important; font-weight: 600 !important; width: 100% !important;}
+.stDownloadButton > button {background: #059669 !important; color: white !important; border: none !important; padding: 0.75rem 2rem !important; border-radius: 8px !important; font-weight: 600 !important; width: 100% !important;}
+[data-testid="stFileUploader"] {background: transparent !important; border: 2px dashed #cbd5e1 !important; border-radius: 8px !important; padding: 1.5rem !important;}
+.stSelectbox label {color: #000 !important; font-weight: 600 !important;}
+.stSelectbox div[data-baseweb="select"] {background-color: #1e293b !important;}
+.stSelectbox div[data-baseweb="select"] > div {background-color: #1e293b !important; color: white !important; font-weight: 500 !important;}
 .stSelectbox svg {fill: white !important;}
-
-[data-testid="stMetricValue"] {color: #1e293b !important; font-size: 1.5rem !important; font-weight: 700 !important;}
-[data-testid="stMetricLabel"] {color: #64748b !important; font-weight: 600 !important; font-size: 0.875rem !important;}
-
-.element-container {background: transparent !important;}
-div[data-testid="stVerticalBlock"] {gap: 1rem !important;}
-
-h1, h2, h3 {color: #1e293b !important;}
-.stInfo {background: linear-gradient(135deg, #e0f2fe 0%, #ddd6fe 100%) !important; border-left: 4px solid #8b5cf6 !important;}
-.stSuccess {background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%) !important; border-left: 4px solid #10b981 !important;}
+[role="listbox"] {background-color: #1e293b !important;}
+[role="option"] {background-color: #1e293b !important; color: white !important;}
+[role="option"]:hover {background-color: #334155 !important;}
+[data-baseweb="select"] span {color: white !important;}
+[data-testid="stMetricValue"] {color: #000 !important; font-size: 1.25rem !important; font-weight: 600 !important;}
+[data-testid="stMetricLabel"] {color: #000 !important; font-weight: 600 !important;}
+h1, h2, h3 {color: #000 !important;}
 </style>
 """, unsafe_allow_html=True)
 
+# MEAL OPTIONS - Different meals for variety
 BREAKFAST_OPTIONS = [
     "2 Whole Wheat Chapatis (50g each), Mixed Vegetable Sabzi, Yogurt",
     "Oatmeal with Berries, Almonds, and Low-fat Milk",
@@ -162,111 +141,80 @@ def generate_pdf(patient, conditions, full_plan):
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     y = 800
+    
     c.setFont("Helvetica-Bold", 16)
     c.drawString(40, y, "AI-NutritionalCare - 28 Day Diet Plan")
     y -= 30
+    
     c.setFont("Helvetica", 11)
     c.drawString(40, y, f"Patient: {patient}")
     y -= 20
     c.drawString(40, y, f"Conditions: {', '.join(conditions)}")
     y -= 30
+    
     for day_name, meals in full_plan.items():
         if y < 100:
             c.showPage()
             y = 800
+        
         c.setFont("Helvetica-Bold", 12)
         c.drawString(40, y, day_name)
         y -= 18
+        
         c.setFont("Helvetica", 9)
         for meal, food in meals.items():
             c.drawString(50, y, f"{meal}: {food[:80]}")
             y -= 14
         y -= 10
+    
     c.save()
     buffer.seek(0)
     return buffer
 
 st.markdown("""
-<div style="background: rgba(255,255,255,0.95); padding: 3rem 2rem; border-radius: 24px; 
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3); margin-bottom: 2rem; text-align: center;
-            backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.5);">
-    <h1 style="font-size: 3rem; font-weight: 700; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-               -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;">
-        🥗 AI-NutritionalCare
-    </h1>
-    <p style="font-size: 1.2rem; color: #64748b; margin: 1rem 0 0 0; font-weight: 500;">
-        Your Personalized AI-Powered Diet Companion
-    </p>
+<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1rem;">
+    <h1 style="font-size: 2.25rem; font-weight: 700; color: #000; margin: 0;">🥗 AI-NutritionalCare</h1>
+    <p style="font-size: 1rem; color: #666; margin: 0.5rem 0 0 0;">Your Personalized AI-Powered Diet Companion</p>
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown("""
-<div style="background: rgba(255,255,255,0.95); padding: 2.5rem; border-radius: 20px; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2); margin-bottom: 2rem;
-            backdrop-filter: blur(10px);">
-""", unsafe_allow_html=True)
-
-uploaded = st.file_uploader("📄 Upload Medical Report", type=["pdf", "txt", "csv"])
-
-if st.button("✨ Generate 28-Day Personalized Diet Plan"):
+st.markdown('<div style="background: white; padding: 1.75rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1rem;">', unsafe_allow_html=True)
+uploaded = st.file_uploader("📄 Upload Medical Report (PDF/TXT/CSV)", type=["pdf", "txt", "csv"])
+if st.button("✨ Generate 28-Day Diet Plan"):
     if uploaded:
-        with st.spinner("🔮 Creating your personalized nutrition journey..."):
+        with st.spinner("Generating your personalized 28-day meal plan..."):
             text = extract_text_from_file(uploaded)
             st.session_state.patient = extract_patient_name(text)
             st.session_state.conditions = extract_conditions(text)
             st.session_state.full_plan = generate_28_day_plan()
             st.session_state.generated = True
-        st.success("🎉 Your 28-day personalized diet plan is ready!")
+        st.success("✅ 28-day diet plan generated!")
     else:
-        st.warning("⚠️ Please upload your medical report first")
-
+        st.warning("⚠️ Please upload a report")
 st.markdown('</div>', unsafe_allow_html=True)
 
 if st.session_state.generated:
     
-    st.markdown("""
-    <div style="background: rgba(255,255,255,0.95); padding: 2.5rem; border-radius: 20px; 
-                box-shadow: 0 10px 40px rgba(0,0,0,0.2); margin-bottom: 2rem;">
-        <h2 style="font-size: 1.75rem; font-weight: 700; color: #1e293b; margin-bottom: 2rem; 
-                   border-bottom: 3px solid #8b5cf6; padding-bottom: 0.75rem;">
-            📋 Patient Profile
-        </h2>
-    </div>
-    """, unsafe_allow_html=True)
-    
+    st.markdown('<div style="background: white; padding: 1.75rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1rem;">', unsafe_allow_html=True)
+    st.subheader("📋 Patient Summary")
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("👤 Patient Name", st.session_state.patient)
+        st.metric("👤 Patient", st.session_state.patient)
     with col2:
-        st.metric("🏥 Health Condition", ', '.join(st.session_state.conditions))
+        st.metric("🏥 Condition", ', '.join(st.session_state.conditions))
     with col3:
-        st.metric("📅 Plan Duration", "28 Days")
+        st.metric("📅 Duration", "28 Days")
+    st.markdown('</div>', unsafe_allow_html=True)
     
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, rgba(139,92,246,0.9) 0%, rgba(124,58,237,0.9) 100%); 
-                padding: 2.5rem; border-radius: 20px; margin: 2rem 0;
-                box-shadow: 0 10px 40px rgba(139,92,246,0.4);">
-        <h3 style="color: white !important; margin: 0 0 1.5rem 0; font-size: 1.5rem; font-weight: 700;">
-            📅 Choose Your Day
-        </h3>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown('<div style="background: #1e293b; padding: 1.75rem; border-radius: 12px; margin-bottom: 1rem;"><h3 style="color: white !important; margin: 0 0 1rem 0; font-size: 1.25rem;">📅 Select Day</h3></div>', unsafe_allow_html=True)
     
     day_options = [f"Day {i}" for i in range(1, 29)]
-    selected_day = st.selectbox("Select Day to View Meal Plan", day_options)
+    selected_day = st.selectbox("Choose Day", day_options)
     
     day_plan = st.session_state.full_plan[selected_day]
     
-    st.markdown(f"""
-    <div style="background: rgba(255,255,255,0.95); padding: 2.5rem; border-radius: 20px; 
-                box-shadow: 0 10px 40px rgba(0,0,0,0.2); margin: 2rem 0;">
-        <h2 style="font-size: 1.75rem; font-weight: 700; color: #1e293b; margin-bottom: 2rem;
-                   border-bottom: 3px solid #f093fb; padding-bottom: 0.75rem;">
-            🍽️ {selected_day} Meal Plan
-        </h2>
-    </div>
-    """, unsafe_allow_html=True)
-    
+    st.markdown('<div style="background: white; padding: 1.75rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1rem; margin-top: 1rem;">', unsafe_allow_html=True)
+    st.subheader(f"🍽️ {selected_day} Diet Plan")
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("### 🍳 Breakfast")
@@ -278,19 +226,11 @@ if st.session_state.generated:
         st.info(day_plan["Dinner"])
         st.markdown("### 🍎 Snacks")
         st.info(day_plan["Snacks"])
+    st.success(f"💡 {day_plan['Notes']}")
+    st.markdown('</div>', unsafe_allow_html=True)
     
-    st.success(f"💡 **Daily Tip:** {day_plan['Notes']}")
-    
-    st.markdown("""
-    <div style="background: rgba(255,255,255,0.95); padding: 2.5rem; border-radius: 20px; 
-                box-shadow: 0 10px 40px rgba(0,0,0,0.2); margin: 2rem 0;">
-        <h2 style="font-size: 1.75rem; font-weight: 700; color: #1e293b; margin-bottom: 2rem;
-                   border-bottom: 3px solid #38ef7d; padding-bottom: 0.75rem;">
-            📥 Download Complete Plan
-        </h2>
-    </div>
-    """, unsafe_allow_html=True)
-    
+    st.markdown('<div style="background: white; padding: 1.75rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1rem;">', unsafe_allow_html=True)
+    st.subheader("📥 Download Complete 28-Day Plan")
     col1, col2 = st.columns(2)
     with col1:
         json_data = {
@@ -299,21 +239,9 @@ if st.session_state.generated:
             "duration": "28 Days",
             "meal_plan": st.session_state.full_plan
         }
-        st.download_button("📄 Download JSON (All 28 Days)", 
-                          data=pd.Series(json_data).to_json(indent=2), 
-                          file_name="complete_28day_plan.json", 
-                          mime="application/json")
+        st.download_button("📄 Download JSON (All 28 Days)", data=pd.Series(json_data).to_json(indent=2), file_name="28_day_diet_plan.json", mime="application/json")
     with col2:
-        st.download_button("📑 Download PDF (All 28 Days)", 
-                          data=generate_pdf(st.session_state.patient, st.session_state.conditions, st.session_state.full_plan), 
-                          file_name="complete_28day_plan.pdf", 
-                          mime="application/pdf")
+        st.download_button("📑 Download PDF (All 28 Days)", data=generate_pdf(st.session_state.patient, st.session_state.conditions, st.session_state.full_plan), file_name="28_day_diet_plan.pdf", mime="application/pdf")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown("""
-<div style="background: rgba(255,255,255,0.95); padding: 2rem; border-radius: 20px; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2); text-align: center; margin-top: 3rem;">
-    <p style="color: #64748b; margin: 0; font-size: 1rem; font-weight: 500;">
-        Made with ❤️ by AI-NutritionalCare Team | Powered by Advanced AI
-    </p>
-</div>
-""", unsafe_allow_html=True)
+st.markdown('<div style="background: white; padding: 1.25rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center;"><p style="color: #666; margin: 0; font-size: 0.9rem;">Made with ❤️ by AI-NutritionalCare Team</p></div>', unsafe_allow_html=True)
