@@ -16,7 +16,7 @@ st.set_page_config(
 )
 
 # --------------------------------------------------
-# GLOBAL CSS (FIX EVERYTHING)
+# CSS (CLEAN WHITE UI)
 # --------------------------------------------------
 st.markdown("""
 <style>
@@ -33,17 +33,15 @@ st.markdown("""
 
 h1 { color: #065f46; font-size: 36px; }
 h2 { color: #047857; font-size: 26px; }
-h3 { color: #065f46; }
 
 .card {
     background: #f9fafb;
-    padding: 1.4rem;
+    padding: 1.3rem;
     border-radius: 14px;
     border: 1px solid #e5e7eb;
     margin-bottom: 1.5rem;
 }
 
-/* File uploader */
 [data-testid="stFileUploader"] {
     background: #ecfdf5;
     border: 2px dashed #10b981;
@@ -51,7 +49,6 @@ h3 { color: #065f46; }
     padding: 1rem;
 }
 
-/* Button */
 .stButton > button {
     width: 100%;
     background: linear-gradient(135deg, #10b981, #047857);
@@ -62,17 +59,16 @@ h3 { color: #065f46; }
     font-weight: 600;
 }
 
-/* EXPANDER FIX (NO BLACK BARS) */
+/* Fix expander dark bars */
 details summary {
     background: #ffffff !important;
     color: #111827 !important;
-    border-radius: 10px;
     font-weight: 600;
 }
 details {
     border: 1px solid #e5e7eb;
     border-radius: 10px;
-    margin-bottom: 0.6rem;
+    margin-bottom: 0.5rem;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -88,7 +84,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --------------------------------------------------
-# TEXT EXTRACTION
+# HELPERS
 # --------------------------------------------------
 def extract_text(file):
     ext = file.name.split(".")[-1].lower()
@@ -109,9 +105,7 @@ def extract_text(file):
 
     return text.strip()
 
-# --------------------------------------------------
-# PATIENT NAME (ROBUST)
-# --------------------------------------------------
+
 def extract_patient_name(text):
     patterns = [
         r"patient\s*name\s*[:\-]\s*([A-Za-z ]+)",
@@ -120,13 +114,11 @@ def extract_patient_name(text):
         r"mr\.?\s+([A-Za-z ]+)",
         r"ms\.?\s+([A-Za-z ]+)"
     ]
-
     for p in patterns:
-        m = re.search(p, text, re.IGNORECASE)
+        m = re.search(p, text, re.I)
         if m:
             return m.group(1).strip()
 
-    # fallback → first meaningful line
     for line in text.splitlines():
         line = line.strip()
         if 3 < len(line) < 40 and line.replace(" ", "").isalpha():
@@ -134,9 +126,7 @@ def extract_patient_name(text):
 
     return "Patient Name Not Found"
 
-# --------------------------------------------------
-# CONDITIONS
-# --------------------------------------------------
+
 def extract_conditions(text):
     t = text.lower()
     conditions = []
@@ -149,9 +139,50 @@ def extract_conditions(text):
     return conditions or ["General Health"]
 
 # --------------------------------------------------
-# DIET PLAN
+# DIET PLAN (28 DAYS)
 # --------------------------------------------------
-PLAN = [{"breakfast": "Oats Porridge", "lunch": "Veg Pulao", "dinner": "Chapati & Mixed Veg"}] * 28
+PLAN = [
+    {"breakfast": "Oats Porridge", "lunch": "Veg Pulao", "dinner": "Chapati & Mixed Veg"}
+] * 28
+
+# --------------------------------------------------
+# PDF GENERATOR
+# --------------------------------------------------
+def generate_pdf(patient, conditions, plan):
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    y = 800
+
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(40, y, "AI-NutritionalCare Diet Report")
+    y -= 40
+
+    c.setFont("Helvetica", 11)
+    c.drawString(40, y, f"Patient: {patient}")
+    y -= 20
+    c.drawString(40, y, f"Medical Condition: {', '.join(conditions)}")
+    y -= 30
+
+    for i, day in enumerate(plan, 1):
+        if y < 120:
+            c.showPage()
+            y = 800
+
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(40, y, f"Day {i}")
+        y -= 15
+
+        c.setFont("Helvetica", 10)
+        c.drawString(50, y, f"Breakfast: {day['breakfast']}")
+        y -= 12
+        c.drawString(50, y, f"Lunch: {day['lunch']}")
+        y -= 12
+        c.drawString(50, y, f"Dinner: {day['dinner']}")
+        y -= 20
+
+    c.save()
+    buffer.seek(0)
+    return buffer
 
 # --------------------------------------------------
 # INPUT
@@ -169,7 +200,7 @@ st.radio("", ["Vegetarian", "Non-Vegetarian"])
 run = st.button("✨ Generate Diet Recommendation")
 
 # --------------------------------------------------
-# OUTPUT
+# OUTPUT (SHORT + CLEAN)
 # --------------------------------------------------
 if run:
     if not uploaded:
@@ -180,33 +211,50 @@ if run:
     patient = extract_patient_name(text)
     conditions = extract_conditions(text)
 
-    st.markdown("## 📄 Output")
-
+    # Patient Summary
+    st.markdown("## 📄 Patient Summary")
     st.markdown(f"""
     <div class="card">
     <b>Patient:</b> {patient}<br>
     <b>Medical Condition:</b> {", ".join(conditions)}<br>
-    <b>Listing 1:</b> Sample Diet Plan from AI-NutritionalCare
+    <b>Plan Duration:</b> 1 Month
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("## 📅 1-Month Diet Plan")
+    # Downloads (TOP)
+    col1, col2 = st.columns(2)
+    with col1:
+        st.download_button(
+            "📄 Download JSON",
+            data=pd.Series({
+                "patient": patient,
+                "conditions": conditions,
+                "diet_plan": PLAN
+            }).to_json(),
+            file_name="diet_plan.json",
+            mime="application/json"
+        )
 
-    for i, day in enumerate(PLAN, 1):
-        with st.expander(f"🍽️ Day {i}"):
-            st.write(f"**Breakfast:** {day['breakfast']}")
-            st.write(f"**Lunch:** {day['lunch']}")
-            st.write(f"**Dinner:** {day['dinner']}")
+    with col2:
+        st.download_button(
+            "📑 Download PDF",
+            data=generate_pdf(patient, conditions, PLAN),
+            file_name=f"{patient.replace(' ', '_')}_DietPlan.pdf",
+            mime="application/pdf"
+        )
 
-    st.markdown("## ⬇️ Download")
+    # Diet Plan (Week Tabs)
+    st.markdown("## 🗓️ 1-Month Diet Plan")
 
-    st.download_button(
-        "📄 Download JSON",
-        data=pd.Series({
-            "patient": patient,
-            "conditions": conditions,
-            "diet_plan": PLAN
-        }).to_json(),
-        file_name="diet_plan.json",
-        mime="application/json"
-    )
+    tabs = st.tabs(["Week 1", "Week 2", "Week 3", "Week 4"])
+    idx = 0
+
+    for tab in tabs:
+        with tab:
+            for _ in range(7):
+                day = PLAN[idx]
+                with st.expander(f"🍽️ Day {idx + 1}"):
+                    st.write(f"**Breakfast:** {day['breakfast']}")
+                    st.write(f"**Lunch:** {day['lunch']}")
+                    st.write(f"**Dinner:** {day['dinner']}")
+                idx += 1
