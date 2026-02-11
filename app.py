@@ -24,14 +24,9 @@ st.markdown("""
 .main .block-container {max-width: 1200px !important; padding: 2rem 1rem !important;}
 #MainMenu, footer, header {display: none !important;}
 
-/* White box containers */
-.white-box {
-    background: white;
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    margin-bottom: 1.5rem;
-}
+/* REMOVE EMPTY WHITE BOXES */
+.element-container:empty {display: none !important;}
+div[data-testid="stVerticalBlock"] > div:empty {display: none !important;}
 
 .stButton > button {
     background: #2563eb !important;
@@ -60,11 +55,10 @@ st.markdown("""
     padding: 1.5rem !important;
 }
 
-/* SELECT BOXES - WHITE TEXT ON BLACK BACKGROUND */
+/* SELECT BOXES - WHITE TEXT */
 .stSelectbox label {
     color: #000000 !important;
     font-weight: 600 !important;
-    font-size: 0.95rem !important;
 }
 
 .stSelectbox div[data-baseweb="select"] {
@@ -74,13 +68,34 @@ st.markdown("""
 .stSelectbox div[data-baseweb="select"] > div {
     background-color: #1e293b !important;
     color: white !important;
+    font-weight: 500 !important;
 }
 
 .stSelectbox svg {
     fill: white !important;
 }
 
-/* Metrics - black text */
+/* Dropdown menu items - WHITE TEXT */
+[role="listbox"] {
+    background-color: #1e293b !important;
+}
+
+[role="option"] {
+    background-color: #1e293b !important;
+    color: white !important;
+}
+
+[role="option"]:hover {
+    background-color: #334155 !important;
+    color: white !important;
+}
+
+/* Selected option text - WHITE */
+[data-baseweb="select"] span {
+    color: white !important;
+}
+
+/* Metrics */
 [data-testid="stMetricValue"] {
     color: #000000 !important;
     font-size: 1.5rem !important;
@@ -92,33 +107,7 @@ st.markdown("""
     font-weight: 600 !important;
 }
 
-/* Info boxes - black text */
-.stAlert {
-    color: #000000 !important;
-}
-
-.stAlert * {
-    color: #000000 !important;
-}
-
-/* Headings - black text */
-h1, h2, h3, h4, h5, h6 {
-    color: #000000 !important;
-}
-
-p, span, div {
-    color: #000000 !important;
-}
-
-/* Success box - black text */
-.stSuccess {
-    background-color: #d1fae5 !important;
-    color: #000000 !important;
-}
-
-.stSuccess * {
-    color: #000000 !important;
-}
+h1, h2, h3 {color: #000000 !important;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -177,14 +166,16 @@ def generate_pdf(patient, conditions, diet):
     buffer.seek(0)
     return buffer
 
-# HEADER
-st.markdown('<div class="white-box">', unsafe_allow_html=True)
-st.title("🥗 AI-NutritionalCare")
-st.caption("Your Personalized AI-Powered Diet Companion")
-st.markdown('</div>', unsafe_allow_html=True)
+# HEADER - WHITE BOX
+st.markdown("""
+<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem;">
+    <h1 style="font-size: 2.5rem; font-weight: 700; color: #000000; margin: 0;">🥗 AI-NutritionalCare</h1>
+    <p style="font-size: 1.1rem; color: #666; margin: 0.5rem 0 0 0;">Your Personalized AI-Powered Diet Companion</p>
+</div>
+""", unsafe_allow_html=True)
 
-# UPLOAD
-st.markdown('<div class="white-box">', unsafe_allow_html=True)
+# UPLOAD - WHITE BOX
+st.markdown('<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem;">', unsafe_allow_html=True)
 uploaded = st.file_uploader("📄 Upload Medical Report (PDF)", type=["pdf"])
 
 if st.button("✨ Generate Diet Recommendation"):
@@ -201,27 +192,24 @@ st.markdown('</div>', unsafe_allow_html=True)
 
 if st.session_state.generated:
     
-    # PATIENT SUMMARY
-    st.markdown('<div class="white-box">', unsafe_allow_html=True)
+    # PATIENT SUMMARY - WHITE BOX
+    st.markdown('<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem;">', unsafe_allow_html=True)
     st.subheader("📋 Patient Summary")
     
     col1, col2, col3 = st.columns(3)
-    
     with col1:
         st.metric("👤 Patient Name", st.session_state.patient)
-    
     with col2:
         st.metric("🏥 Medical Condition", ', '.join(st.session_state.conditions))
-    
     with col3:
         st.metric("📅 Plan Duration", "1 Month")
     
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # TIMELINE SELECTION - BLACK BACKGROUND BOX
+    # TIMELINE - BLACK BOX WITH WHITE TEXT
     st.markdown("""
     <div style="background: #1e293b; padding: 2rem; border-radius: 12px; margin-bottom: 1.5rem;">
-        <h3 style="color: white !important; margin: 0 0 1rem 0;">📅 Select Timeline</h3>
+        <h3 style="color: white !important; margin: 0 0 1.5rem 0; font-size: 1.5rem;">📅 Select Timeline</h3>
     </div>
     """, unsafe_allow_html=True)
     
@@ -231,8 +219,8 @@ if st.session_state.generated:
     with col2:
         day = st.selectbox("Day", ["Day 1","Day 2","Day 3","Day 4","Day 5","Day 6","Day 7"])
     
-    # DIET PLAN
-    st.markdown('<div class="white-box">', unsafe_allow_html=True)
+    # DIET PLAN - WHITE BOX
+    st.markdown('<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem;">', unsafe_allow_html=True)
     st.subheader(f"🍽️ {day} Diet Plan")
     
     col1, col2 = st.columns(2)
@@ -254,8 +242,8 @@ if st.session_state.generated:
     st.success(f"💡 **Important Notes:** {DAY_PLAN['Notes']}")
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # DOWNLOAD
-    st.markdown('<div class="white-box">', unsafe_allow_html=True)
+    # DOWNLOAD - WHITE BOX
+    st.markdown('<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem;">', unsafe_allow_html=True)
     st.subheader("📥 Download Your Diet Plan")
     
     col1, col2 = st.columns(2)
@@ -277,7 +265,9 @@ if st.session_state.generated:
         )
     st.markdown('</div>', unsafe_allow_html=True)
 
-# FOOTER
-st.markdown('<div class="white-box" style="text-align: center;">', unsafe_allow_html=True)
-st.caption("Made with ❤️ by AI-NutritionalCare Team | Powered by Advanced AI")
-st.markdown('</div>', unsafe_allow_html=True)
+# FOOTER - WHITE BOX
+st.markdown("""
+<div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center;">
+    <p style="color: #666; margin: 0; font-size: 0.95rem;">Made with ❤️ by AI-NutritionalCare Team | Powered by Advanced AI</p>
+</div>
+""", unsafe_allow_html=True)
