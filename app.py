@@ -16,7 +16,7 @@ st.set_page_config(
 )
 
 # ==================================================
-# SESSION STATE (CRITICAL)
+# SESSION STATE
 # ==================================================
 if "generated" not in st.session_state:
     st.session_state.generated = False
@@ -28,61 +28,68 @@ if "diet_plan" not in st.session_state:
     st.session_state.diet_plan = {}
 
 # ==================================================
-# DARK UI CSS
+# LIGHT / WHITE UI CSS
 # ==================================================
 st.markdown("""
 <style>
 .stApp {
-    background: radial-gradient(circle at top, #0b1220, #020617);
-    color: #e5e7eb;
-    font-family: 'Segoe UI', sans-serif;
+    background: #f8fafc;
+    color: #0f172a;
+    font-family: "Segoe UI", sans-serif;
 }
-.block-container { max-width: 1200px; padding-top: 2rem; }
+
+.block-container {
+    max-width: 1200px;
+    padding-top: 2rem;
+}
 
 .card {
-    background: linear-gradient(135deg, #020617, #0f172a);
-    border-radius: 20px;
-    padding: 1.8rem;
-    border: 1px solid #1e293b;
-    box-shadow: 0 30px 80px rgba(0,0,0,0.7);
-    margin-bottom: 2rem;
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 1.6rem;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    margin-bottom: 1.6rem;
 }
 
-h1, h2, h3 { color: #f9fafb; }
+h1, h2, h3 {
+    color: #0f172a;
+}
 
 .diet-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-    margin-top: 1.5rem;
+    gap: 1.4rem;
+    margin-top: 1.4rem;
 }
 
 .diet-card {
-    background: #020617;
-    border-radius: 16px;
-    padding: 1.4rem;
-    border: 1px solid #1e293b;
+    background: #f9fafb;
+    border-radius: 14px;
+    padding: 1.2rem;
+    border: 1px solid #e5e7eb;
 }
 
 .diet-title {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 700;
-    margin-bottom: 0.6rem;
+    margin-bottom: 0.5rem;
+    color: #1e293b;
 }
 
 .diet-text {
-    color: #cbd5f5;
     font-size: 14px;
+    color: #334155;
     line-height: 1.6;
 }
 
 .stButton > button {
-    background: linear-gradient(135deg, #22d3ee, #3b82f6);
-    color: #020617;
-    font-weight: 700;
-    border-radius: 14px;
-    padding: 0.8rem 2.4rem;
-    font-size: 16px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 0.6rem 1.8rem;
+    font-size: 15px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -93,7 +100,7 @@ h1, h2, h3 { color: #f9fafb; }
 st.markdown("""
 <div class="card">
 <h1>🥗 AI-NutritionalCare</h1>
-<p style="color:#9ca3af;font-size:18px;">
+<p style="color:#475569;font-size:17px;">
 AI-driven Personalized Diet Recommendation System
 </p>
 </div>
@@ -113,9 +120,7 @@ def extract_text(file):
 def extract_patient_name(text):
     patterns = [
         r"patient\s*name\s*[:\-]\s*([A-Za-z ]+)",
-        r"name\s*[:\-]\s*([A-Za-z ]+)",
-        r"mr\.?\s+([A-Za-z ]+)",
-        r"ms\.?\s+([A-Za-z ]+)"
+        r"name\s*[:\-]\s*([A-Za-z ]+)"
     ]
     for p in patterns:
         m = re.search(p, text, re.I)
@@ -132,14 +137,14 @@ def extract_conditions(text):
     return cond or ["General Health"]
 
 # ==================================================
-# DIET DATA (USED FOR ALL DAYS)
+# DIET DATA
 # ==================================================
 DAY_PLAN = {
-    "Breakfast": "2 Whole Wheat Chapatis (50g each), Mixed Vegetable Sabzi, Yogurt",
-    "Lunch": "1 cup Brown Rice, Dal Tadka, Cucumber Raita, Salad",
-    "Dinner": "2 Rotis, Palak Paneer, Mixed Vegetable Salad",
-    "Snacks": "Roasted Chickpeas (30g), 1 Apple",
-    "Notes": "Drink at least 8–10 glasses of water. Avoid sugary drinks."
+    "🍳 Breakfast": "2 Whole Wheat Chapatis (50g each), Mixed Vegetable Sabzi, Yogurt",
+    "🍛 Lunch": "1 cup Brown Rice, Dal Tadka, Cucumber Raita, Salad",
+    "🌙 Dinner": "2 Rotis, Palak Paneer, Mixed Vegetable Salad",
+    "🍎 Snacks": "Roasted Chickpeas (30g), 1 Apple",
+    "📝 Notes": "Drink at least 8–10 glasses of water. Avoid sugary drinks."
 }
 
 # ==================================================
@@ -177,7 +182,7 @@ def generate_pdf(patient, conditions, diet):
 # ==================================================
 uploaded = st.file_uploader("Upload Medical Report (PDF)", type=["pdf"])
 
-if st.button("✨ Generate Diet Recommendation"):
+if st.button("Generate Diet Recommendation"):
     if uploaded:
         text = extract_text(uploaded)
         st.session_state.patient = extract_patient_name(text)
@@ -185,7 +190,7 @@ if st.button("✨ Generate Diet Recommendation"):
         st.session_state.diet_plan = DAY_PLAN
         st.session_state.generated = True
     else:
-        st.warning("Please upload a PDF file")
+        st.warning("Please upload a medical report")
 
 # ==================================================
 # OUTPUT
@@ -204,35 +209,33 @@ if st.session_state.generated:
     week = st.selectbox("Select Week", ["Week 1", "Week 2", "Week 3", "Week 4"])
     day = st.selectbox("Select Day", ["Day 1", "Day 2", "Day 3", "Day 4", "Day 5", "Day 6", "Day 7"])
 
+    # BUILD HTML SAFELY (NO INLINE JOIN)
+    diet_html = ""
+    for title, content in st.session_state.diet_plan.items():
+        diet_html += f"""
+        <div class="diet-card">
+            <div class="diet-title">{title}</div>
+            <div class="diet-text">{content}</div>
+        </div>
+        """
+
     st.markdown(f"""
     <div class="card">
     <h2>{day} Diet Plan</h2>
-
     <div class="diet-grid">
-        {''.join([
-            f'''
-            <div class="diet-card">
-                <div class="diet-title">{title}</div>
-                <div class="diet-text">{content}</div>
-            </div>
-            ''' for title, content in st.session_state.diet_plan.items()
-        ])}
+        {diet_html}
     </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # ================= DOWNLOADS =================
-    st.markdown("### ⬇️ Download")
-
-    json_data = {
-        "patient": st.session_state.patient,
-        "conditions": st.session_state.conditions,
-        "diet_plan": st.session_state.diet_plan
-    }
-
+    # DOWNLOADS
     st.download_button(
         "Download JSON",
-        data=pd.Series(json_data).to_json(),
+        data=pd.Series({
+            "patient": st.session_state.patient,
+            "conditions": st.session_state.conditions,
+            "diet_plan": st.session_state.diet_plan
+        }).to_json(),
         file_name="diet_plan.json",
         mime="application/json"
     )
