@@ -7,7 +7,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
 # --------------------------------------------------
-# PAGE CONFIG (VERTICAL)
+# PAGE CONFIG
 # --------------------------------------------------
 st.set_page_config(
     page_title="AI-NutritionalCare",
@@ -16,7 +16,7 @@ st.set_page_config(
 )
 
 # --------------------------------------------------
-# CSS FIX (TEXT VISIBILITY + VERTICAL FLOW)
+# GLOBAL CSS (FIX EVERYTHING)
 # --------------------------------------------------
 st.markdown("""
 <style>
@@ -27,35 +27,17 @@ st.markdown("""
 }
 
 .block-container {
-    padding-top: 2rem;
     max-width: 850px;
+    padding-top: 2rem;
 }
 
-h1 {
-    color: #065f46;
-    font-size: 40px;
-    font-weight: 800;
-}
+h1 { color: #065f46; font-size: 36px; }
+h2 { color: #047857; font-size: 26px; }
+h3 { color: #065f46; }
 
-h2 {
-    color: #047857;
-    font-size: 28px;
-    font-weight: 700;
-}
-
-h3 {
-    color: #065f46;
-}
-
-p, label, span {
-    color: #1f2937;
-    font-size: 16px;
-}
-
-/* Card */
 .card {
     background: #f9fafb;
-    padding: 1.5rem;
+    padding: 1.4rem;
     border-radius: 14px;
     border: 1px solid #e5e7eb;
     margin-bottom: 1.5rem;
@@ -79,11 +61,24 @@ p, label, span {
     font-size: 16px;
     font-weight: 600;
 }
+
+/* EXPANDER FIX (NO BLACK BARS) */
+details summary {
+    background: #ffffff !important;
+    color: #111827 !important;
+    border-radius: 10px;
+    font-weight: 600;
+}
+details {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    margin-bottom: 0.6rem;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # --------------------------------------------------
-# HEADER (VISIBLE!)
+# HEADER
 # --------------------------------------------------
 st.markdown("""
 <div class="card">
@@ -93,7 +88,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --------------------------------------------------
-# FUNCTIONS
+# TEXT EXTRACTION
 # --------------------------------------------------
 def extract_text(file):
     ext = file.name.split(".")[-1].lower()
@@ -102,25 +97,46 @@ def extract_text(file):
     if ext == "pdf":
         with pdfplumber.open(file) as pdf:
             for page in pdf.pages:
-                t = page.extract_text()
-                if t:
-                    text += t + "\n"
+                if page.extract_text():
+                    text += page.extract_text() + "\n"
 
     elif ext == "csv":
         df = pd.read_csv(file)
-        text = " ".join(df.astype(str).values.flatten())
+        text = "\n".join(df.astype(str).values.flatten())
 
     elif ext == "txt":
         text = file.read().decode("utf-8")
 
     return text.strip()
 
-
+# --------------------------------------------------
+# PATIENT NAME (ROBUST)
+# --------------------------------------------------
 def extract_patient_name(text):
-    match = re.search(r"patient\s*[:\-]\s*([A-Za-z ]+)", text, re.I)
-    return match.group(1).strip() if match else "Unknown Patient"
+    patterns = [
+        r"patient\s*name\s*[:\-]\s*([A-Za-z ]+)",
+        r"name\s*[:\-]\s*([A-Za-z ]+)",
+        r"patient\s*[:\-]\s*([A-Za-z ]+)",
+        r"mr\.?\s+([A-Za-z ]+)",
+        r"ms\.?\s+([A-Za-z ]+)"
+    ]
 
+    for p in patterns:
+        m = re.search(p, text, re.IGNORECASE)
+        if m:
+            return m.group(1).strip()
 
+    # fallback → first meaningful line
+    for line in text.splitlines():
+        line = line.strip()
+        if 3 < len(line) < 40 and line.replace(" ", "").isalpha():
+            return line
+
+    return "Patient Name Not Found"
+
+# --------------------------------------------------
+# CONDITIONS
+# --------------------------------------------------
 def extract_conditions(text):
     t = text.lower()
     conditions = []
@@ -133,16 +149,12 @@ def extract_conditions(text):
     return conditions or ["General Health"]
 
 # --------------------------------------------------
-# DIET DATA
+# DIET PLAN
 # --------------------------------------------------
-VEG_DAYS = [{"breakfast": "Oats Porridge", "lunch": "Veg Pulao", "dinner": "Chapati & Mixed Veg"}] * 28
-NONVEG_DAYS = [{"breakfast": "Boiled Eggs", "lunch": "Chicken Rice", "dinner": "Fish Curry"}] * 28
-
-def generate_plan(pref):
-    return VEG_DAYS if pref == "Vegetarian" else NONVEG_DAYS
+PLAN = [{"breakfast": "Oats Porridge", "lunch": "Veg Pulao", "dinner": "Chapati & Mixed Veg"}] * 28
 
 # --------------------------------------------------
-# INPUT (STACKED, NOT HORIZONTAL)
+# INPUT
 # --------------------------------------------------
 st.markdown("## 📥 Upload Patient Data")
 
@@ -152,7 +164,7 @@ uploaded = st.file_uploader(
 )
 
 st.markdown("## 🥦 Food Preference")
-preference = st.radio("", ["Vegetarian", "Non-Vegetarian"])
+st.radio("", ["Vegetarian", "Non-Vegetarian"])
 
 run = st.button("✨ Generate Diet Recommendation")
 
@@ -164,10 +176,9 @@ if run:
         st.warning("Please upload a medical report.")
         st.stop()
 
-    raw = extract_text(uploaded)
-    patient = extract_patient_name(raw)
-    conditions = extract_conditions(raw)
-    plan = generate_plan(preference)
+    text = extract_text(uploaded)
+    patient = extract_patient_name(text)
+    conditions = extract_conditions(text)
 
     st.markdown("## 📄 Output")
 
@@ -181,15 +192,12 @@ if run:
 
     st.markdown("## 📅 1-Month Diet Plan")
 
-    for i, day in enumerate(plan, 1):
+    for i, day in enumerate(PLAN, 1):
         with st.expander(f"🍽️ Day {i}"):
             st.write(f"**Breakfast:** {day['breakfast']}")
             st.write(f"**Lunch:** {day['lunch']}")
             st.write(f"**Dinner:** {day['dinner']}")
 
-    # --------------------------------------------------
-    # DOWNLOADS
-    # --------------------------------------------------
     st.markdown("## ⬇️ Download")
 
     st.download_button(
@@ -197,7 +205,7 @@ if run:
         data=pd.Series({
             "patient": patient,
             "conditions": conditions,
-            "diet_plan": plan
+            "diet_plan": PLAN
         }).to_json(),
         file_name="diet_plan.json",
         mime="application/json"
