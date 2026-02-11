@@ -60,6 +60,16 @@ div[data-testid="stVerticalBlock"]:empty {
     display: none !important;
 }
 
+/* Hide elements that only contain emojis */
+.stMarkdown > div > div > p:only-child {
+    margin: 0;
+}
+
+/* Hide standalone icon containers */
+div[data-testid="stMarkdownContainer"] > p > span:only-child {
+    display: inline;
+}
+
 div[data-testid="stVerticalBlock"] > div[style*="flex-direction: column"] > div[style*=""] {
     gap: 0 !important;
 }
@@ -206,36 +216,46 @@ div[data-testid="stVerticalBlock"] > div {
     font-size: 1.75rem;
     font-weight: 700;
     color: #1a202c;
-    margin-bottom: 1.5rem;
+    margin: 0 0 1.5rem 0;
     padding-bottom: 0.75rem;
     border-bottom: 2px solid #e2e8f0;
 }
 
+.summary-card .row-widget {
+    margin-top: 1rem;
+}
+
 .info-row {
     display: flex;
-    align-items: center;
-    margin: 1rem 0;
-    padding: 1.25rem;
+    flex-direction: column;
+    margin: 0;
+    padding: 1.5rem;
     background: #f8fafc;
     border-radius: 8px;
     border: 1px solid #e2e8f0;
     transition: all 0.2s ease;
+    height: 100%;
 }
 
 .info-row:hover {
     background: #f1f5f9;
     border-color: #cbd5e1;
+    transform: translateY(-2px);
 }
 
 .info-label {
     font-weight: 600;
     color: #475569;
-    font-size: 1rem;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
 }
 
 .info-value {
     color: #1e293b;
     font-size: 1rem;
+    line-height: 1.5;
 }
 
 /* Select boxes */
@@ -478,30 +498,47 @@ st.markdown('</div>', unsafe_allow_html=True)
 # ================================
 if st.session_state.generated:
     
-    # Patient Summary Card - All in one markdown to avoid white boxes
-    st.markdown(f"""
-    <div class="summary-card">
-        <h2 class="summary-title">📋 Patient Summary</h2>
-        
+    # Patient Summary Card - Using Streamlit components instead of raw HTML
+    st.markdown('<div class="summary-card">', unsafe_allow_html=True)
+    st.markdown('<h2 class="summary-title">📋 Patient Summary</h2>', unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown(f"""
         <div class="info-row">
-            <span class="info-label">👤 Patient Name:</span>&nbsp;&nbsp;
-            <span class="info-value">{st.session_state.patient}</span>
+            <div>
+                <span class="info-label">👤 Patient Name</span><br>
+                <span class="info-value" style="font-size: 1.1rem; font-weight: 600;">{st.session_state.patient}</span>
+            </div>
         </div>
-        
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
         <div class="info-row">
-            <span class="info-label">🏥 Medical Condition:</span>&nbsp;&nbsp;
-            <span class="info-value">{', '.join(st.session_state.conditions)}</span>
+            <div>
+                <span class="info-label">🏥 Medical Condition</span><br>
+                <span class="info-value" style="font-size: 1.1rem; font-weight: 600;">{', '.join(st.session_state.conditions)}</span>
+            </div>
         </div>
-        
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"""
         <div class="info-row">
-            <span class="info-label">📅 Plan Duration:</span>&nbsp;&nbsp;
-            <span class="info-value">1 Month (28 Days)</span>
+            <div>
+                <span class="info-label">📅 Plan Duration</span><br>
+                <span class="info-value" style="font-size: 1.1rem; font-weight: 600;">1 Month (28 Days)</span>
+            </div>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # Week and Day Selection
-    st.markdown('<div class="selection-section"><p class="section-label">📅 Select Your Plan Timeline</p>', unsafe_allow_html=True)
+    st.markdown('<div class="selection-section">', unsafe_allow_html=True)
+    st.markdown('<p class="section-label">📅 Select Your Plan Timeline</p>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     with col1:
@@ -661,7 +698,8 @@ if st.session_state.generated:
     # ================================
     # DOWNLOAD SECTION
     # ================================
-    st.markdown('<div class="download-section"><h2 class="custom-subheader">📥 Download Your Diet Plan</h2>', unsafe_allow_html=True)
+    st.markdown('<div class="download-section">', unsafe_allow_html=True)
+    st.markdown('<h2 class="custom-subheader">📥 Download Your Diet Plan</h2>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     
