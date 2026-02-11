@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import pdfplumber
 import pandas as pd
 import re
@@ -7,18 +6,8 @@ from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
-# ================================
-# PAGE CONFIG
-# ================================
-st.set_page_config(
-    page_title="AI-NutritionalCare",
-    page_icon="🥗",
-    layout="wide"
-)
+st.set_page_config(page_title="AI-NutritionalCare", page_icon="🥗", layout="wide")
 
-# ================================
-# SESSION STATE
-# ================================
 if "generated" not in st.session_state:
     st.session_state.generated = False
 if "patient" not in st.session_state:
@@ -26,150 +15,50 @@ if "patient" not in st.session_state:
 if "conditions" not in st.session_state:
     st.session_state.conditions = []
 
-# ================================
-# COMPLETE CSS - FORCES BLACK TEXT AND REMOVES BOXES
-# ================================
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* FORCE EVERYTHING TO USE INTER FONT AND BLACK TEXT */
-* {
-    font-family: 'Inter', sans-serif !important;
-    color: #000000 !important;
+* {font-family: 'Inter', sans-serif !important;}
+.stApp {background: #f5f5f5 !important;}
+.main .block-container {max-width: 1200px !important; padding: 2rem 1rem !important;}
+#MainMenu, footer, header {display: none !important;}
+
+.stButton > button {
+    background: #2563eb !important;
+    color: white !important;
+    border: none !important;
+    padding: 0.75rem 2rem !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    width: 100% !important;
 }
 
-/* Background */
-.stApp {
-    background: #f0f2f6 !important;
+.stDownloadButton > button {
+    background: #059669 !important;
+    color: white !important;
+    border: none !important;
+    padding: 0.75rem 2rem !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    width: 100% !important;
 }
 
-.main .block-container {
-    max-width: 1400px !important;
-    padding: 1rem !important;
-}
-
-/* REMOVE ALL STREAMLIT DEFAULT CONTAINERS AND BOXES */
-.element-container {
-    background: transparent !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
-
-div[data-testid="stVerticalBlock"] > div {
-    background: transparent !important;
-    gap: 0 !important;
-}
-
-div[data-testid="stVerticalBlock"] {
-    gap: 1rem !important;
-}
-
-/* Hide Streamlit branding */
-#MainMenu, footer, header {
-    visibility: hidden !important;
-    display: none !important;
-}
-
-/* FORCE ALL TEXT TO BE BLACK */
-p, span, div, h1, h2, h3, h4, h5, h6, label {
-    color: #000000 !important;
-}
-
-/* File Uploader */
 [data-testid="stFileUploader"] {
     background: white !important;
     border: 2px dashed #cbd5e1 !important;
     border-radius: 8px !important;
-    padding: 2rem !important;
+    padding: 1.5rem !important;
 }
 
-[data-testid="stFileUploader"] section {
-    background: white !important;
-}
-
-[data-testid="stFileUploader"] label {
-    color: #000000 !important;
-    font-weight: 600 !important;
-}
-
-/* Buttons - Blue primary, Green download */
-.stButton > button {
-    background: #3b82f6 !important;
-    color: white !important;
-    border: none !important;
-    padding: 0.75rem 2rem !important;
-    border-radius: 8px !important;
-    font-weight: 600 !important;
-    width: 100% !important;
-    font-size: 1rem !important;
-}
-
-.stButton > button:hover {
-    background: #2563eb !important;
-    box-shadow: 0 4px 12px rgba(59,130,246,0.4) !important;
-}
-
-.stDownloadButton > button {
-    background: #10b981 !important;
-    color: white !important;
-    border: none !important;
-    padding: 0.75rem 2rem !important;
-    border-radius: 8px !important;
-    font-weight: 600 !important;
-    width: 100% !important;
-}
-
-.stDownloadButton > button:hover {
-    background: #059669 !important;
-}
-
-/* Select boxes */
 .stSelectbox label {
-    color: #000000 !important;
+    color: #1e293b !important;
     font-weight: 600 !important;
-    font-size: 1rem !important;
-}
-
-.stSelectbox div[data-baseweb="select"] {
-    background: white !important;
-}
-
-.stSelectbox div[data-baseweb="select"] > div {
-    background: white !important;
-    color: #000000 !important;
-}
-
-/* Success and Warning messages */
-.stSuccess {
-    background-color: #d1fae5 !important;
-    padding: 1rem !important;
-    border-radius: 8px !important;
-    border-left: 4px solid #10b981 !important;
-}
-
-.stWarning {
-    background-color: #fef3c7 !important;
-    padding: 1rem !important;
-    border-radius: 8px !important;
-    border-left: 4px solid #f59e0b !important;
-}
-
-.stSuccess *, .stWarning * {
-    color: #000000 !important;
-}
-
-/* Column containers */
-[data-testid="column"] {
-    background: transparent !important;
-    padding: 0.5rem !important;
+    font-size: 0.95rem !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ================================
-# HELPERS
-# ================================
 def extract_text(file):
     text = ""
     with pdfplumber.open(file) as pdf:
@@ -179,10 +68,7 @@ def extract_text(file):
     return text
 
 def extract_patient_name(text):
-    patterns = [
-        r"patient\s*name\s*[:\-]\s*([A-Za-z ]+)",
-        r"name\s*[:\-]\s*([A-Za-z ]+)"
-    ]
+    patterns = [r"patient\s*name\s*[:\-]\s*([A-Za-z ]+)", r"name\s*[:\-]\s*([A-Za-z ]+)"]
     for p in patterns:
         m = re.search(p, text, re.I)
         if m:
@@ -228,21 +114,12 @@ def generate_pdf(patient, conditions, diet):
     buffer.seek(0)
     return buffer
 
-# ================================
 # HEADER
-# ================================
-st.markdown("""
-<div style="background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem; text-align: center;">
-    <h1 style="font-size: 2.5rem; font-weight: 700; color: #000000; margin: 0;">🥗 AI-NutritionalCare</h1>
-    <p style="font-size: 1.1rem; color: #000000; margin-top: 0.5rem;">Your Personalized AI-Powered Diet Companion</p>
-</div>
-""", unsafe_allow_html=True)
+st.title("🥗 AI-NutritionalCare")
+st.caption("Your Personalized AI-Powered Diet Companion")
+st.divider()
 
-# ================================
-# UPLOAD SECTION
-# ================================
-st.markdown('<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem;">', unsafe_allow_html=True)
-
+# UPLOAD
 uploaded = st.file_uploader("📄 Upload Medical Report (PDF)", type=["pdf"])
 
 if st.button("✨ Generate Diet Recommendation"):
@@ -256,38 +133,24 @@ if st.button("✨ Generate Diet Recommendation"):
     else:
         st.warning("⚠️ Please upload a medical report")
 
-st.markdown('</div>', unsafe_allow_html=True)
-
-# ================================
-# RESULTS
-# ================================
 if st.session_state.generated:
     
-    # Patient Summary
-    st.markdown(f"""
-    <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem;">
-        <h2 style="font-size: 1.75rem; font-weight: 700; color: #000000; margin-bottom: 1.5rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.75rem;">📋 Patient Summary</h2>
-        
-        <div style="background: #f9fafb; padding: 1.25rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #3b82f6;">
-            <div style="font-size: 0.875rem; font-weight: 600; color: #000000; text-transform: uppercase; margin-bottom: 0.5rem;">👤 PATIENT NAME</div>
-            <div style="font-size: 1.25rem; font-weight: 600; color: #000000;">{st.session_state.patient}</div>
-        </div>
-        
-        <div style="background: #f9fafb; padding: 1.25rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #3b82f6;">
-            <div style="font-size: 0.875rem; font-weight: 600; color: #000000; text-transform: uppercase; margin-bottom: 0.5rem;">🏥 MEDICAL CONDITION</div>
-            <div style="font-size: 1.25rem; font-weight: 600; color: #000000;">{', '.join(st.session_state.conditions)}</div>
-        </div>
-        
-        <div style="background: #f9fafb; padding: 1.25rem; border-radius: 8px; border-left: 4px solid #3b82f6;">
-            <div style="font-size: 0.875rem; font-weight: 600; color: #000000; text-transform: uppercase; margin-bottom: 0.5rem;">📅 PLAN DURATION</div>
-            <div style="font-size: 1.25rem; font-weight: 600; color: #000000;">1 Month (28 Days)</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Selection
-    st.markdown('<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem;">', unsafe_allow_html=True)
-    st.markdown('<h2 style="font-size: 1.75rem; font-weight: 700; color: #000000; margin-bottom: 1.5rem;">📅 Select Timeline</h2>', unsafe_allow_html=True)
+    st.divider()
+    st.subheader("📋 Patient Summary")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric("👤 Patient Name", st.session_state.patient)
+    
+    with col2:
+        st.metric("🏥 Medical Condition", ', '.join(st.session_state.conditions))
+    
+    with col3:
+        st.metric("📅 Plan Duration", "1 Month")
+    
+    st.divider()
+    st.subheader("📅 Select Timeline")
     
     col1, col2 = st.columns(2)
     with col1:
@@ -295,54 +158,32 @@ if st.session_state.generated:
     with col2:
         day = st.selectbox("Day", ["Day 1","Day 2","Day 3","Day 4","Day 5","Day 6","Day 7"])
     
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # Diet Plan
-    st.markdown(f"""
-    <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem;">
-        <h2 style="font-size: 1.75rem; font-weight: 700; color: #000000; margin-bottom: 1.5rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.75rem;">🍽️ {day} Diet Plan</h2>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
-            
-            <div style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; border: 1px solid #e5e7eb;">
-                <div style="font-size: 2rem; margin-bottom: 0.75rem;">🍳</div>
-                <div style="font-size: 1.25rem; font-weight: 700; color: #000000; margin-bottom: 0.75rem;">Breakfast</div>
-                <div style="font-size: 1rem; color: #000000; line-height: 1.6;">{DAY_PLAN["Breakfast"]}</div>
-            </div>
-            
-            <div style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; border: 1px solid #e5e7eb;">
-                <div style="font-size: 2rem; margin-bottom: 0.75rem;">🍛</div>
-                <div style="font-size: 1.25rem; font-weight: 700; color: #000000; margin-bottom: 0.75rem;">Lunch</div>
-                <div style="font-size: 1rem; color: #000000; line-height: 1.6;">{DAY_PLAN["Lunch"]}</div>
-            </div>
-            
-            <div style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; border: 1px solid #e5e7eb;">
-                <div style="font-size: 2rem; margin-bottom: 0.75rem;">🌙</div>
-                <div style="font-size: 1.25rem; font-weight: 700; color: #000000; margin-bottom: 0.75rem;">Dinner</div>
-                <div style="font-size: 1rem; color: #000000; line-height: 1.6;">{DAY_PLAN["Dinner"]}</div>
-            </div>
-            
-            <div style="background: #f9fafb; padding: 1.5rem; border-radius: 8px; border: 1px solid #e5e7eb;">
-                <div style="font-size: 2rem; margin-bottom: 0.75rem;">🍎</div>
-                <div style="font-size: 1.25rem; font-weight: 700; color: #000000; margin-bottom: 0.75rem;">Snacks</div>
-                <div style="font-size: 1rem; color: #000000; line-height: 1.6;">{DAY_PLAN["Snacks"]}</div>
-            </div>
-            
-            <div style="background: #dbeafe; padding: 1.5rem; border-radius: 8px; border: 1px solid #93c5fd; grid-column: 1 / -1;">
-                <div style="font-size: 2rem; margin-bottom: 0.75rem;">💡</div>
-                <div style="font-size: 1.25rem; font-weight: 700; color: #000000; margin-bottom: 0.75rem;">Important Notes</div>
-                <div style="font-size: 1rem; color: #000000; line-height: 1.6;">{DAY_PLAN["Notes"]}</div>
-            </div>
-            
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Downloads
-    st.markdown('<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem;">', unsafe_allow_html=True)
-    st.markdown('<h2 style="font-size: 1.75rem; font-weight: 700; color: #000000; margin-bottom: 1.5rem;">📥 Download</h2>', unsafe_allow_html=True)
+    st.divider()
+    st.subheader(f"🍽️ {day} Diet Plan")
     
     col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### 🍳 Breakfast")
+        st.info(DAY_PLAN["Breakfast"])
+        
+        st.markdown("### 🍛 Lunch")
+        st.info(DAY_PLAN["Lunch"])
+    
+    with col2:
+        st.markdown("### 🌙 Dinner")
+        st.info(DAY_PLAN["Dinner"])
+        
+        st.markdown("### 🍎 Snacks")
+        st.info(DAY_PLAN["Snacks"])
+    
+    st.success(f"💡 **Important Notes:** {DAY_PLAN['Notes']}")
+    
+    st.divider()
+    st.subheader("📥 Download Your Diet Plan")
+    
+    col1, col2 = st.columns(2)
+    
     with col1:
         st.download_button(
             "📄 Download JSON",
@@ -350,6 +191,7 @@ if st.session_state.generated:
             file_name="diet_plan.json",
             mime="application/json"
         )
+    
     with col2:
         st.download_button(
             "📑 Download PDF",
@@ -357,11 +199,6 @@ if st.session_state.generated:
             file_name="diet_plan.pdf",
             mime="application/pdf"
         )
-    
-    st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown("""
-<div style="text-align: center; padding: 1.5rem; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-top: 2rem;">
-    <p style="color: #000000; margin: 0;">Made with ❤️ by AI-NutritionalCare Team</p>
-</div>
-""", unsafe_allow_html=True)
+st.divider()
+st.caption("Made with ❤️ by AI-NutritionalCare Team | Powered by Advanced AI")
