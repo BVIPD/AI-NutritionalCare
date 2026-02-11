@@ -27,7 +27,7 @@ if "conditions" not in st.session_state:
     st.session_state.conditions = []
 
 # ================================
-# MODERN UI WITH ANIMATIONS
+# MODERN UI WITH PROFESSIONAL STYLING
 # ================================
 st.markdown("""
 <style>
@@ -36,7 +36,7 @@ st.markdown("""
 
 /* Global styles */
 .stApp {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #f5f7fa;
     font-family: 'Inter', sans-serif;
 }
 
@@ -45,224 +45,206 @@ st.markdown("""
     padding: 2rem 1rem;
 }
 
-/* Remove default streamlit styling */
-.stMarkdown, .stText {
-    color: white;
-}
-
-/* Hide white boxes */
+/* Remove all default streamlit empty containers */
 .element-container:has(> .stMarkdown > div > div[data-testid="stMarkdownContainer"]:empty) {
-    display: none;
+    display: none !important;
 }
 
-section[data-testid="stSidebar"] + div.block-container::before,
-section[data-testid="stSidebar"] + div.block-container::after {
-    display: none;
+div[data-testid="stVerticalBlock"] > div[style*="flex-direction: column"] > div[style*=""] {
+    gap: 0 !important;
 }
 
-/* Remove extra padding and margins */
-.element-container {
-    margin-bottom: 0 !important;
-}
+/* Remove streamlit branding */
+footer {display: none !important;}
+#MainMenu {display: none !important;}
+header {visibility: hidden !important;}
+.viewerBadge_container__1QSob {display: none !important;}
 
-div[data-testid="stVerticalBlock"] > div:has(> div > div > div > div[style*="display: none"]) {
-    display: none;
-}
-
-/* Remove streamlit branding elements */
-footer {
-    display: none;
-}
-
-#MainMenu {
-    display: none;
-}
-
-header {
-    visibility: hidden;
-}
-
-/* Improve overall spacing */
+/* Remove extra spacing */
 .main .block-container {
-    padding-top: 1rem;
+    padding-top: 2rem;
     padding-bottom: 1rem;
+}
+
+.element-container {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+div[data-testid="stVerticalBlock"] {
+    gap: 0 !important;
 }
 
 /* Main header container */
 .main-header {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border-radius: 24px;
-    padding: 2rem 3rem;
+    background: white;
+    border-radius: 16px;
+    padding: 3rem 2rem;
     margin-bottom: 2rem;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    animation: fadeInDown 0.6s ease-out;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
 }
 
 .main-title {
-    font-size: 3.5rem;
+    font-size: 3rem;
     font-weight: 700;
-    background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: #1a202c;
     margin-bottom: 0.5rem;
     text-align: center;
 }
 
 .subtitle {
-    font-size: 1.2rem;
-    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.1rem;
+    color: #64748b;
     text-align: center;
-    font-weight: 300;
-    letter-spacing: 0.5px;
+    font-weight: 400;
 }
 
 /* Upload section */
 .upload-container {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 20px;
-    padding: 2rem;
-    margin: 2rem 0;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-    animation: fadeInUp 0.6s ease-out 0.2s both;
+    background: white;
+    border-radius: 16px;
+    padding: 2.5rem;
+    margin: 0 0 2rem 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
 }
 
 .upload-container label {
-    color: #2d3748 !important;
+    color: #1a202c !important;
     font-weight: 600 !important;
-    font-size: 1.2rem !important;
+    font-size: 1.1rem !important;
     margin-bottom: 1rem !important;
 }
 
 /* File uploader styling */
 [data-testid="stFileUploader"] {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    border-radius: 16px;
+    background: #f8fafc;
+    border-radius: 12px;
     padding: 2rem;
-    border: 3px dashed rgba(255, 255, 255, 0.5);
+    border: 2px dashed #cbd5e1;
     transition: all 0.3s ease;
 }
 
 [data-testid="stFileUploader"] label {
-    color: white !important;
+    color: #475569 !important;
 }
 
 [data-testid="stFileUploader"]:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 24px rgba(240, 147, 251, 0.3);
+    border-color: #3b82f6;
+    background: #eff6ff;
 }
 
 /* Buttons */
 .stButton > button {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    background: #3b82f6;
     color: white;
     border: none;
-    padding: 0.75rem 3rem;
-    border-radius: 50px;
+    padding: 0.875rem 3rem;
+    border-radius: 8px;
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: 1rem;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 8px 20px rgba(245, 87, 108, 0.4);
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
     width: 100%;
 }
 
 .stButton > button:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 30px rgba(245, 87, 108, 0.5);
+    background: #2563eb;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    transform: translateY(-1px);
 }
 
 /* Download buttons */
 .stDownloadButton > button {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #10b981;
     color: white;
     border: none;
-    padding: 0.7rem 2rem;
-    border-radius: 12px;
-    font-weight: 500;
-    font-size: 1rem;
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     width: 100%;
     margin: 0.5rem 0;
 }
 
 .stDownloadButton > button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    background: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 /* Summary card */
 .summary-card {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 20px;
+    background: white;
+    border-radius: 16px;
     padding: 2rem;
-    margin: 1rem 0;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-    animation: fadeInUp 0.6s ease-out 0.4s both;
+    margin: 0 0 2rem 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
 }
 
 .summary-title {
-    font-size: 2rem;
+    font-size: 1.75rem;
     font-weight: 700;
-    color: #764ba2;
+    color: #1a202c;
     margin-bottom: 1.5rem;
-    border-bottom: 3px solid #f093fb;
-    padding-bottom: 0.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e2e8f0;
 }
 
 .info-row {
     display: flex;
     align-items: center;
     margin: 1rem 0;
-    padding: 1rem;
-    background: linear-gradient(135deg, #f8f9ff 0%, #fff5f7 100%);
-    border-radius: 12px;
-    transition: all 0.3s ease;
+    padding: 1.25rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
 }
 
 .info-row:hover {
-    transform: translateX(5px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background: #f1f5f9;
+    border-color: #cbd5e1;
 }
 
 .info-label {
     font-weight: 600;
-    color: #764ba2;
-    font-size: 1.1rem;
+    color: #475569;
+    font-size: 1rem;
 }
 
 .info-value {
-    color: #4a5568;
-    font-size: 1.1rem;
+    color: #1e293b;
+    font-size: 1rem;
 }
 
 /* Select boxes */
 .stSelectbox {
-    margin: 1rem 0;
+    margin: 0;
 }
 
 .stSelectbox label {
-    color: white !important;
+    color: #1a202c !important;
     font-weight: 600 !important;
-    font-size: 1.1rem !important;
+    font-size: 1rem !important;
     margin-bottom: 0.5rem !important;
-    display: block !important;
 }
 
 .stSelectbox > div > div {
     background: white;
-    border-radius: 12px;
-    border: 2px solid #e0e7ff;
-    transition: all 0.3s ease;
-    font-size: 1rem;
-    padding: 0.5rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
 }
 
 .stSelectbox > div > div:hover {
-    border-color: #764ba2;
-    box-shadow: 0 4px 12px rgba(118, 75, 162, 0.3);
+    border-color: #3b82f6;
 }
 
 .stSelectbox [data-baseweb="select"] {
@@ -271,43 +253,51 @@ header {
 
 .stSelectbox [data-baseweb="select"] > div {
     background-color: white;
-    color: #2d3748;
+    color: #1e293b;
     font-weight: 500;
 }
 
 /* Download section */
 .download-section {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 20px;
+    background: white;
+    border-radius: 16px;
     padding: 2rem;
-    margin: 2rem 0;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-    animation: fadeInUp 0.6s ease-out 0.6s both;
+    margin: 0 0 2rem 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
 }
 
 /* Selection section styling */
 .selection-section {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
+    background: white;
     border-radius: 16px;
-    padding: 1.5rem;
-    margin: 2rem 0;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 2rem;
+    margin: 0 0 2rem 0;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .section-label {
-    color: white;
-    font-size: 1.2rem;
+    color: #1a202c;
+    font-size: 1.25rem;
     font-weight: 600;
-    margin-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
     display: block;
 }
 
-/* Animations */
+.section-label {
+    color: #1a202c;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    display: block;
+}
+
+/* Animations - subtle */
 @keyframes fadeInDown {
     from {
         opacity: 0;
-        transform: translateY(-30px);
+        transform: translateY(-10px);
     }
     to {
         opacity: 1;
@@ -318,7 +308,7 @@ header {
 @keyframes fadeInUp {
     from {
         opacity: 0;
-        transform: translateY(30px);
+        transform: translateY(10px);
     }
     to {
         opacity: 1;
@@ -326,52 +316,45 @@ header {
     }
 }
 
-@keyframes pulse {
-    0%, 100% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.05);
-    }
-}
-
 /* Warning/Info boxes */
-.stWarning {
-    background: rgba(255, 193, 7, 0.1);
-    border-left: 4px solid #ffc107;
+.stWarning, .stSuccess {
+    background: white;
+    border-left: 4px solid #f59e0b;
     border-radius: 8px;
     padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.stSuccess {
+    border-left-color: #10b981;
 }
 
 /* Divider */
 hr {
-    border: none;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    margin: 2rem 0;
+    display: none;
 }
 
 /* Custom subheader */
 .custom-subheader {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     font-weight: 600;
-    color: #764ba2;
-    margin: 2rem 0 1rem 0;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #f093fb;
+    color: #1a202c;
+    margin: 0 0 1.5rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e2e8f0;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
     .main-title {
-        font-size: 2.5rem;
+        font-size: 2rem;
     }
     
     .subtitle {
-        font-size: 1rem;
+        font-size: 0.95rem;
     }
     
-    .upload-container, .summary-card, .download-section {
+    .upload-container, .summary-card, .download-section, .selection-section {
         padding: 1.5rem;
     }
 }
@@ -513,16 +496,16 @@ if st.session_state.generated:
     
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown('<p style="color: white; font-weight: 600; margin-bottom: 0.5rem;">📆 Week</p>', unsafe_allow_html=True)
+        st.markdown('<p style="color: #475569; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.95rem;">📆 Week</p>', unsafe_allow_html=True)
         week = st.selectbox("Week", ["Week 1", "Week 2", "Week 3", "Week 4"], label_visibility="collapsed")
     with col2:
-        st.markdown('<p style="color: white; font-weight: 600; margin-bottom: 0.5rem;">🗓️ Day</p>', unsafe_allow_html=True)
+        st.markdown('<p style="color: #475569; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.95rem;">🗓️ Day</p>', unsafe_allow_html=True)
         day = st.selectbox("Day", ["Day 1","Day 2","Day 3","Day 4","Day 5","Day 6","Day 7"], label_visibility="collapsed")
     
     st.markdown('</div>', unsafe_allow_html=True)
 
     # ================================
-    # ENHANCED DIET PLAN DISPLAY
+    # PROFESSIONAL DIET PLAN DISPLAY
     # ================================
     components.html(f"""
     <!DOCTYPE html>
@@ -538,111 +521,86 @@ if st.session_state.generated:
             
             body {{
                 font-family: 'Inter', sans-serif;
-                padding: 20px;
+                padding: 0;
                 background: transparent;
             }}
             
             .container {{
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                padding: 40px;
-                border-radius: 24px;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-                animation: slideIn 0.6s ease-out;
-            }}
-            
-            @keyframes slideIn {{
-                from {{
-                    opacity: 0;
-                    transform: translateY(30px);
-                }}
-                to {{
-                    opacity: 1;
-                    transform: translateY(0);
-                }}
+                background: white;
+                padding: 2.5rem;
+                border-radius: 16px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+                border: 1px solid #e2e8f0;
             }}
             
             h2 {{
-                color: white;
-                font-size: 2.5rem;
+                color: #1a202c;
+                font-size: 1.75rem;
                 font-weight: 700;
-                margin-bottom: 30px;
+                margin-bottom: 2rem;
                 text-align: center;
-                text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+                padding-bottom: 1rem;
+                border-bottom: 2px solid #e2e8f0;
             }}
             
             .grid {{
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                gap: 20px;
-                margin-top: 20px;
+                gap: 1.25rem;
+                margin-top: 1.5rem;
             }}
             
             .card {{
-                background: rgba(255, 255, 255, 0.95);
-                padding: 24px;
-                border-radius: 16px;
-                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-                transition: all 0.3s ease;
+                background: #f8fafc;
+                padding: 1.75rem;
+                border-radius: 12px;
+                border: 1px solid #e2e8f0;
+                transition: all 0.2s ease;
                 position: relative;
-                overflow: hidden;
-            }}
-            
-            .card::before {{
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                height: 4px;
-                background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
-                transform: scaleX(0);
-                transition: transform 0.3s ease;
             }}
             
             .card:hover {{
-                transform: translateY(-8px);
-                box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
-            }}
-            
-            .card:hover::before {{
-                transform: scaleX(1);
+                transform: translateY(-4px);
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+                border-color: #cbd5e1;
             }}
             
             .card-icon {{
                 font-size: 2.5rem;
-                margin-bottom: 12px;
+                margin-bottom: 1rem;
                 display: block;
             }}
             
             .card-title {{
-                font-size: 1.3rem;
+                font-size: 1.2rem;
                 font-weight: 700;
-                color: #764ba2;
-                margin-bottom: 12px;
+                color: #1e293b;
+                margin-bottom: 1rem;
                 display: flex;
                 align-items: center;
                 gap: 8px;
             }}
             
             .card-content {{
-                color: #4a5568;
-                font-size: 1rem;
+                color: #475569;
+                font-size: 0.95rem;
                 line-height: 1.6;
                 font-weight: 400;
             }}
             
             .notes-card {{
                 grid-column: 1 / -1;
-                background: linear-gradient(135deg, #fff5f7 0%, #f8f9ff 100%);
+                background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+                border-color: #bfdbfe;
             }}
             
             @media (max-width: 768px) {{
                 .container {{
-                    padding: 24px;
+                    padding: 1.5rem;
                 }}
                 
                 h2 {{
-                    font-size: 2rem;
+                    font-size: 1.5rem;
                 }}
                 
                 .grid {{
@@ -731,10 +689,10 @@ if st.session_state.generated:
 # FOOTER
 # ================================
 st.markdown("""
-<div style="text-align: center; margin-top: 4rem; padding: 2rem; 
-            background: rgba(255, 255, 255, 0.1); border-radius: 16px;
-            backdrop-filter: blur(10px);">
-    <p style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem;">
+<div style="text-align: center; margin-top: 3rem; padding: 2rem; 
+            background: white; border-radius: 16px;
+            border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);">
+    <p style="color: #64748b; font-size: 0.9rem; margin: 0;">
         Made with ❤️ by AI-NutritionalCare Team | Powered by Advanced AI
     </p>
 </div>
