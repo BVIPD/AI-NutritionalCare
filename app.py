@@ -12,12 +12,66 @@ from reportlab.pdfgen import canvas
 st.set_page_config(
     page_title="AI-NutritionalCare",
     page_icon="🥗",
-    layout="centered"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
-st.title("🥗 AI-NutritionalCare")
-st.caption("AI-driven Personalized Diet Recommendation System")
-st.divider()
+# --------------------------------------------------
+# GLOBAL CSS (WHITE MEDICAL UI)
+# --------------------------------------------------
+st.markdown("""
+<style>
+.stApp {
+    background-color: #ffffff;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.block-container {
+    padding-top: 2rem;
+}
+
+h1, h2, h3 {
+    color: #0f766e;
+}
+
+.card {
+    background: #f9fafb;
+    padding: 1.5rem;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+    margin-bottom: 1.5rem;
+}
+
+.stButton > button {
+    background: linear-gradient(135deg, #10b981, #0f766e);
+    color: white;
+    border-radius: 12px;
+    padding: 0.6rem 1.5rem;
+    font-weight: 600;
+    border: none;
+}
+
+[data-testid="stFileUploader"] {
+    border: 2px dashed #10b981;
+    border-radius: 14px;
+    padding: 1rem;
+    background: #f0fdf4;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# --------------------------------------------------
+# HEADER
+# --------------------------------------------------
+st.markdown("""
+<div class="card">
+    <h1>🥗 AI-NutritionalCare</h1>
+    <p style="font-size:18px;color:#374151;">
+        AI-driven Personalized Diet Recommendation System
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
 # --------------------------------------------------
 # UTILITIES
@@ -35,7 +89,7 @@ def extract_text(file):
 
     elif ext == "csv":
         df = pd.read_csv(file)
-        text = " ".join(df.astype(str).iloc[0].values)
+        text = " ".join(df.astype(str).values.flatten())
 
     elif ext == "txt":
         text = file.read().decode("utf-8")
@@ -67,7 +121,7 @@ def extract_conditions(text):
     return conditions if conditions else ["General Health"]
 
 # --------------------------------------------------
-# MEAL DATA (BREAKFAST / LUNCH / DINNER)
+# DIET DATA
 # --------------------------------------------------
 VEG_DAYS = [
     {"breakfast": "Oats Porridge", "lunch": "Veg Pulao", "dinner": "Chapati & Mixed Veg"},
@@ -76,29 +130,8 @@ VEG_DAYS = [
     {"breakfast": "Masala Oats", "lunch": "Dal & Chapati", "dinner": "Paneer Bhurji"},
     {"breakfast": "Ragi Porridge", "lunch": "Veg Fried Rice", "dinner": "Cabbage Fry"},
     {"breakfast": "Sprouts Salad", "lunch": "Veg Biryani", "dinner": "Curd Bowl"},
-    {"breakfast": "Fruit Bowl", "lunch": "Stuffed Paratha", "dinner": "Veg Soup"},
-    {"breakfast": "Upma", "lunch": "Vegetable Dalia", "dinner": "Paneer Salad"},
-    {"breakfast": "Besan Omelette", "lunch": "Bottle Gourd Khichdi", "dinner": "Veg Cutlet"},
-    {"breakfast": "Curd & Fruits", "lunch": "Veg Sandwich", "dinner": "Lemon Rice"},
-    {"breakfast": "Vegetable Toast", "lunch": "Veg Pulao", "dinner": "Dal Soup"},
-    {"breakfast": "Oats Idli", "lunch": "Veg Fried Rice", "dinner": "Chapati & Sabzi"},
-    {"breakfast": "Smoothie Bowl", "lunch": "Rajma Rice", "dinner": "Tomato Soup"},
-    {"breakfast": "Poha", "lunch": "Veg Khichdi", "dinner": "Curd Rice"},
-    {"breakfast": "Ragi Dosa", "lunch": "Dal & Chapati", "dinner": "Veg Soup"},
-    {"breakfast": "Idli", "lunch": "Veg Biryani", "dinner": "Paneer Bhurji"},
-    {"breakfast": "Oats Porridge", "lunch": "Veg Sandwich", "dinner": "Cabbage Fry"},
-    {"breakfast": "Sprouts Bowl", "lunch": "Veg Pulao", "dinner": "Curd Bowl"},
-    {"breakfast": "Fruit Salad", "lunch": "Stuffed Paratha", "dinner": "Tomato Soup"},
-    {"breakfast": "Masala Oats", "lunch": "Veg Fried Rice", "dinner": "Paneer Salad"},
-    {"breakfast": "Vegetable Upma", "lunch": "Veg Khichdi", "dinner": "Veg Soup"},
-    {"breakfast": "Ragi Porridge", "lunch": "Dal & Chapati", "dinner": "Curd Rice"},
-    {"breakfast": "Poha", "lunch": "Veg Biryani", "dinner": "Tomato Soup"},
-    {"breakfast": "Oats Smoothie", "lunch": "Veg Sandwich", "dinner": "Paneer Bhurji"},
-    {"breakfast": "Idli", "lunch": "Rajma Rice", "dinner": "Veg Soup"},
-    {"breakfast": "Fruit Bowl", "lunch": "Veg Pulao", "dinner": "Curd Bowl"},
-    {"breakfast": "Besan Toast", "lunch": "Veg Khichdi", "dinner": "Dal Soup"},
-    {"breakfast": "Vegetable Poha", "lunch": "Veg Fried Rice", "dinner": "Paneer Salad"}
-]
+    {"breakfast": "Fruit Bowl", "lunch": "Stuffed Paratha", "dinner": "Veg Soup"}
+] * 4  # 28 days
 
 NONVEG_DAYS = [
     {"breakfast": "Boiled Eggs & Toast", "lunch": "Grilled Chicken & Rice", "dinner": "Fish Curry"},
@@ -107,29 +140,8 @@ NONVEG_DAYS = [
     {"breakfast": "Scrambled Eggs", "lunch": "Chicken Curry", "dinner": "Egg Salad"},
     {"breakfast": "Boiled Eggs", "lunch": "Grilled Fish", "dinner": "Chicken Wrap"},
     {"breakfast": "Egg Bhurji", "lunch": "Chicken Biryani", "dinner": "Fish Soup"},
-    {"breakfast": "Protein Toast", "lunch": "Chicken Fried Rice", "dinner": "Egg Curry"},
-    {"breakfast": "Egg Sandwich", "lunch": "Chicken Pulao", "dinner": "Fish Fry"},
-    {"breakfast": "Egg Omelette", "lunch": "Grilled Chicken", "dinner": "Chicken Soup"},
-    {"breakfast": "Boiled Eggs", "lunch": "Fish Curry", "dinner": "Chicken Salad"},
-    {"breakfast": "Egg Toast", "lunch": "Chicken Rice", "dinner": "Egg Bhurji"},
-    {"breakfast": "Egg Wrap", "lunch": "Fish Rice Bowl", "dinner": "Chicken Stir Fry"},
-    {"breakfast": "Scrambled Eggs", "lunch": "Chicken Curry", "dinner": "Fish Soup"},
-    {"breakfast": "Egg Omelette", "lunch": "Chicken Pulao", "dinner": "Egg Salad"},
-    {"breakfast": "Boiled Eggs", "lunch": "Grilled Fish", "dinner": "Chicken Wrap"},
-    {"breakfast": "Egg Toast", "lunch": "Chicken Fried Rice", "dinner": "Fish Curry"},
-    {"breakfast": "Egg Bhurji", "lunch": "Chicken Biryani", "dinner": "Chicken Soup"},
-    {"breakfast": "Protein Bowl", "lunch": "Fish Rice Bowl", "dinner": "Egg Curry"},
-    {"breakfast": "Egg Sandwich", "lunch": "Chicken Pulao", "dinner": "Fish Fry"},
-    {"breakfast": "Boiled Eggs", "lunch": "Grilled Chicken", "dinner": "Chicken Salad"},
-    {"breakfast": "Egg Omelette", "lunch": "Fish Curry", "dinner": "Egg Bhurji"},
-    {"breakfast": "Egg Toast", "lunch": "Chicken Rice", "dinner": "Fish Soup"},
-    {"breakfast": "Scrambled Eggs", "lunch": "Chicken Curry", "dinner": "Egg Salad"},
-    {"breakfast": "Egg Wrap", "lunch": "Fish Rice Bowl", "dinner": "Chicken Stir Fry"},
-    {"breakfast": "Boiled Eggs", "lunch": "Chicken Pulao", "dinner": "Fish Curry"},
-    {"breakfast": "Egg Sandwich", "lunch": "Grilled Fish", "dinner": "Chicken Soup"},
-    {"breakfast": "Egg Bhurji", "lunch": "Chicken Fried Rice", "dinner": "Egg Curry"},
-    {"breakfast": "Protein Toast", "lunch": "Chicken Biryani", "dinner": "Fish Soup"}
-]
+    {"breakfast": "Protein Toast", "lunch": "Chicken Fried Rice", "dinner": "Egg Curry"}
+] * 4
 
 def generate_month_plan(pref):
     return VEG_DAYS if pref == "Vegetarian" else NONVEG_DAYS
@@ -142,14 +154,14 @@ def generate_pdf(patient, conditions, plan):
     c = canvas.Canvas(buffer, pagesize=A4)
     y = 800
 
-    c.setFont("Helvetica-Bold", 14)
+    c.setFont("Helvetica-Bold", 16)
     c.drawString(40, y, "AI-NutritionalCare Diet Report")
-    y -= 30
+    y -= 40
 
     c.setFont("Helvetica", 11)
     c.drawString(40, y, f"Patient: {patient}")
     y -= 20
-    c.drawString(40, y, f"Medical Conditions: {', '.join(conditions)}")
+    c.drawString(40, y, f"Medical Condition: {', '.join(conditions)}")
     y -= 30
 
     for i, day in enumerate(plan, 1):
@@ -174,18 +186,32 @@ def generate_pdf(patient, conditions, plan):
     return buffer
 
 # --------------------------------------------------
-# INPUT UI
+# INPUT SECTION
 # --------------------------------------------------
-uploaded = st.file_uploader("📄 Upload Medical Report (PDF / CSV / TXT)", type=["pdf", "csv", "txt"])
-preference = st.radio("🥦 Food Preference", ["Vegetarian", "Non-Vegetarian"])
-run = st.button("✨ Generate Diet Recommendation")
+st.markdown("## 📥 Upload Patient Data")
+
+col1, col2 = st.columns([2, 1])
+
+with col1:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    uploaded = st.file_uploader(
+        "Upload Medical Report (PDF / CSV / TXT)",
+        type=["pdf", "csv", "txt"]
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with col2:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    preference = st.radio("Food Preference", ["Vegetarian", "Non-Vegetarian"])
+    run = st.button("✨ Generate Diet Recommendation")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # --------------------------------------------------
 # OUTPUT
 # --------------------------------------------------
 if run:
     if not uploaded:
-        st.warning("Please upload a file.")
+        st.warning("Please upload a medical report.")
         st.stop()
 
     raw_text = extract_text(uploaded)
@@ -193,14 +219,20 @@ if run:
     conditions = extract_conditions(raw_text)
     month_plan = generate_month_plan(preference)
 
-    st.subheader("📄 Output")
-    st.markdown(f"""
-**Patient:** {patient}  
-**Medical Condition:** {', '.join(conditions)}  
-**Listing 1:** Sample Diet Plan from AI-NutritionalCare
-""")
+    # ---- PATIENT INFO (YOU ASKED THIS TO BE IN OUTPUT) ----
+    st.markdown("## 📄 Output")
 
-    st.subheader("📅 1-Month Diet Plan (Breakfast • Lunch • Dinner)")
+    st.markdown(f"""
+    <div class="card">
+    <b>Patient:</b> {patient}<br>
+    <b>Medical Condition:</b> {', '.join(conditions)}<br>
+    <b>Listing 1:</b> Sample Diet Plan from AI-NutritionalCare
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ---- DIET PLAN ----
+    st.markdown("## 📅 1-Month Diet Plan (Breakfast • Lunch • Dinner)")
+
     tabs = st.tabs(["Week 1", "Week 2", "Week 3", "Week 4"])
 
     day_idx = 0
@@ -214,21 +246,28 @@ if run:
                     st.write(f"**Dinner:** {day['dinner']}")
                 day_idx += 1
 
-    st.download_button(
-        "⬇️ Download JSON",
-        data=pd.Series({
-            "patient": patient,
-            "conditions": conditions,
-            "diet_plan": month_plan
-        }).to_json(),
-        file_name="diet_plan.json",
-        mime="application/json"
-    )
+    # ---- DOWNLOADS ----
+    st.markdown("## ⬇️ Download")
 
-    pdf_file = generate_pdf(patient, conditions, month_plan)
-    st.download_button(
-        "⬇️ Download PDF",
-        data=pdf_file,
-        file_name=f"{patient.replace(' ', '_')}_DietPlan.pdf",
-        mime="application/pdf"
-    )
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.download_button(
+            "📄 Download JSON",
+            data=pd.Series({
+                "patient": patient,
+                "conditions": conditions,
+                "diet_plan": month_plan
+            }).to_json(),
+            file_name="diet_plan.json",
+            mime="application/json"
+        )
+
+    with col2:
+        pdf_file = generate_pdf(patient, conditions, month_plan)
+        st.download_button(
+            "📑 Download PDF",
+            data=pdf_file,
+            file_name=f"{patient.replace(' ', '_')}_DietPlan.pdf",
+            mime="application/pdf"
+        )
