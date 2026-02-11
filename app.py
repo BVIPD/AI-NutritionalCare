@@ -7,74 +7,93 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
 # --------------------------------------------------
-# PAGE CONFIG
+# PAGE CONFIG (VERTICAL)
 # --------------------------------------------------
 st.set_page_config(
     page_title="AI-NutritionalCare",
     page_icon="🥗",
-    layout="wide",
-    initial_sidebar_state="collapsed"
+    layout="centered"
 )
 
 # --------------------------------------------------
-# GLOBAL CSS (WHITE MEDICAL UI)
+# CSS FIX (TEXT VISIBILITY + VERTICAL FLOW)
 # --------------------------------------------------
 st.markdown("""
 <style>
 .stApp {
     background-color: #ffffff;
+    color: #111827;
     font-family: 'Segoe UI', sans-serif;
 }
 
 .block-container {
     padding-top: 2rem;
+    max-width: 850px;
 }
 
-h1, h2, h3 {
-    color: #0f766e;
+h1 {
+    color: #065f46;
+    font-size: 40px;
+    font-weight: 800;
 }
 
+h2 {
+    color: #047857;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+h3 {
+    color: #065f46;
+}
+
+p, label, span {
+    color: #1f2937;
+    font-size: 16px;
+}
+
+/* Card */
 .card {
     background: #f9fafb;
     padding: 1.5rem;
-    border-radius: 16px;
+    border-radius: 14px;
     border: 1px solid #e5e7eb;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
     margin-bottom: 1.5rem;
 }
 
-.stButton > button {
-    background: linear-gradient(135deg, #10b981, #0f766e);
-    color: white;
+/* File uploader */
+[data-testid="stFileUploader"] {
+    background: #ecfdf5;
+    border: 2px dashed #10b981;
     border-radius: 12px;
-    padding: 0.6rem 1.5rem;
-    font-weight: 600;
-    border: none;
+    padding: 1rem;
 }
 
-[data-testid="stFileUploader"] {
-    border: 2px dashed #10b981;
-    border-radius: 14px;
-    padding: 1rem;
-    background: #f0fdf4;
+/* Button */
+.stButton > button {
+    width: 100%;
+    background: linear-gradient(135deg, #10b981, #047857);
+    color: white;
+    border-radius: 10px;
+    padding: 0.7rem;
+    font-size: 16px;
+    font-weight: 600;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # --------------------------------------------------
-# HEADER
+# HEADER (VISIBLE!)
 # --------------------------------------------------
 st.markdown("""
 <div class="card">
-    <h1>🥗 AI-NutritionalCare</h1>
-    <p style="font-size:18px;color:#374151;">
-        AI-driven Personalized Diet Recommendation System
-    </p>
+<h1>🥗 AI-NutritionalCare</h1>
+<p>AI-driven Personalized Diet Recommendation System</p>
 </div>
 """, unsafe_allow_html=True)
 
 # --------------------------------------------------
-# UTILITIES
+# FUNCTIONS
 # --------------------------------------------------
 def extract_text(file):
     ext = file.name.split(".")[-1].lower()
@@ -98,15 +117,8 @@ def extract_text(file):
 
 
 def extract_patient_name(text):
-    patterns = [
-        r"patient\s*name\s*[:\-]\s*([A-Za-z ]+)",
-        r"patient\s*[:\-]\s*([A-Za-z ]+)"
-    ]
-    for p in patterns:
-        m = re.search(p, text, re.IGNORECASE)
-        if m:
-            return m.group(1).strip()
-    return "Unknown Patient"
+    match = re.search(r"patient\s*[:\-]\s*([A-Za-z ]+)", text, re.I)
+    return match.group(1).strip() if match else "Unknown Patient"
 
 
 def extract_conditions(text):
@@ -118,93 +130,31 @@ def extract_conditions(text):
         conditions.append("High Cholesterol")
     if "hypertension" in t or "blood pressure" in t:
         conditions.append("Hypertension")
-    return conditions if conditions else ["General Health"]
+    return conditions or ["General Health"]
 
 # --------------------------------------------------
 # DIET DATA
 # --------------------------------------------------
-VEG_DAYS = [
-    {"breakfast": "Oats Porridge", "lunch": "Veg Pulao", "dinner": "Chapati & Mixed Veg"},
-    {"breakfast": "Idli & Sambar", "lunch": "Rajma Rice", "dinner": "Curd Rice"},
-    {"breakfast": "Vegetable Poha", "lunch": "Veg Khichdi", "dinner": "Tomato Soup"},
-    {"breakfast": "Masala Oats", "lunch": "Dal & Chapati", "dinner": "Paneer Bhurji"},
-    {"breakfast": "Ragi Porridge", "lunch": "Veg Fried Rice", "dinner": "Cabbage Fry"},
-    {"breakfast": "Sprouts Salad", "lunch": "Veg Biryani", "dinner": "Curd Bowl"},
-    {"breakfast": "Fruit Bowl", "lunch": "Stuffed Paratha", "dinner": "Veg Soup"}
-] * 4  # 28 days
+VEG_DAYS = [{"breakfast": "Oats Porridge", "lunch": "Veg Pulao", "dinner": "Chapati & Mixed Veg"}] * 28
+NONVEG_DAYS = [{"breakfast": "Boiled Eggs", "lunch": "Chicken Rice", "dinner": "Fish Curry"}] * 28
 
-NONVEG_DAYS = [
-    {"breakfast": "Boiled Eggs & Toast", "lunch": "Grilled Chicken & Rice", "dinner": "Fish Curry"},
-    {"breakfast": "Egg Omelette", "lunch": "Chicken Pulao", "dinner": "Chicken Soup"},
-    {"breakfast": "Egg Toast", "lunch": "Fish Rice Bowl", "dinner": "Chicken Stir Fry"},
-    {"breakfast": "Scrambled Eggs", "lunch": "Chicken Curry", "dinner": "Egg Salad"},
-    {"breakfast": "Boiled Eggs", "lunch": "Grilled Fish", "dinner": "Chicken Wrap"},
-    {"breakfast": "Egg Bhurji", "lunch": "Chicken Biryani", "dinner": "Fish Soup"},
-    {"breakfast": "Protein Toast", "lunch": "Chicken Fried Rice", "dinner": "Egg Curry"}
-] * 4
-
-def generate_month_plan(pref):
+def generate_plan(pref):
     return VEG_DAYS if pref == "Vegetarian" else NONVEG_DAYS
 
 # --------------------------------------------------
-# PDF GENERATOR
-# --------------------------------------------------
-def generate_pdf(patient, conditions, plan):
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    y = 800
-
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(40, y, "AI-NutritionalCare Diet Report")
-    y -= 40
-
-    c.setFont("Helvetica", 11)
-    c.drawString(40, y, f"Patient: {patient}")
-    y -= 20
-    c.drawString(40, y, f"Medical Condition: {', '.join(conditions)}")
-    y -= 30
-
-    for i, day in enumerate(plan, 1):
-        if y < 120:
-            c.showPage()
-            y = 800
-
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(40, y, f"Day {i}")
-        y -= 15
-
-        c.setFont("Helvetica", 10)
-        c.drawString(50, y, f"Breakfast: {day['breakfast']}")
-        y -= 12
-        c.drawString(50, y, f"Lunch: {day['lunch']}")
-        y -= 12
-        c.drawString(50, y, f"Dinner: {day['dinner']}")
-        y -= 20
-
-    c.save()
-    buffer.seek(0)
-    return buffer
-
-# --------------------------------------------------
-# INPUT SECTION
+# INPUT (STACKED, NOT HORIZONTAL)
 # --------------------------------------------------
 st.markdown("## 📥 Upload Patient Data")
 
-col1, col2 = st.columns([2, 1])
+uploaded = st.file_uploader(
+    "Upload Medical Report (PDF / CSV / TXT)",
+    type=["pdf", "csv", "txt"]
+)
 
-with col1:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    uploaded = st.file_uploader(
-        "Upload Medical Report (PDF / CSV / TXT)",
-        type=["pdf", "csv", "txt"]
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
+st.markdown("## 🥦 Food Preference")
+preference = st.radio("", ["Vegetarian", "Non-Vegetarian"])
 
-with col2:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    preference = st.radio("Food Preference", ["Vegetarian", "Non-Vegetarian"])
-    run = st.button("✨ Generate Diet Recommendation")
-    st.markdown('</div>', unsafe_allow_html=True)
+run = st.button("✨ Generate Diet Recommendation")
 
 # --------------------------------------------------
 # OUTPUT
@@ -214,60 +164,41 @@ if run:
         st.warning("Please upload a medical report.")
         st.stop()
 
-    raw_text = extract_text(uploaded)
-    patient = extract_patient_name(raw_text)
-    conditions = extract_conditions(raw_text)
-    month_plan = generate_month_plan(preference)
+    raw = extract_text(uploaded)
+    patient = extract_patient_name(raw)
+    conditions = extract_conditions(raw)
+    plan = generate_plan(preference)
 
-    # ---- PATIENT INFO (YOU ASKED THIS TO BE IN OUTPUT) ----
     st.markdown("## 📄 Output")
 
     st.markdown(f"""
     <div class="card">
     <b>Patient:</b> {patient}<br>
-    <b>Medical Condition:</b> {', '.join(conditions)}<br>
+    <b>Medical Condition:</b> {", ".join(conditions)}<br>
     <b>Listing 1:</b> Sample Diet Plan from AI-NutritionalCare
     </div>
     """, unsafe_allow_html=True)
 
-    # ---- DIET PLAN ----
-    st.markdown("## 📅 1-Month Diet Plan (Breakfast • Lunch • Dinner)")
+    st.markdown("## 📅 1-Month Diet Plan")
 
-    tabs = st.tabs(["Week 1", "Week 2", "Week 3", "Week 4"])
+    for i, day in enumerate(plan, 1):
+        with st.expander(f"🍽️ Day {i}"):
+            st.write(f"**Breakfast:** {day['breakfast']}")
+            st.write(f"**Lunch:** {day['lunch']}")
+            st.write(f"**Dinner:** {day['dinner']}")
 
-    day_idx = 0
-    for tab in tabs:
-        with tab:
-            for _ in range(7):
-                day = month_plan[day_idx]
-                with st.expander(f"🍽️ Day {day_idx + 1}"):
-                    st.write(f"**Breakfast:** {day['breakfast']}")
-                    st.write(f"**Lunch:** {day['lunch']}")
-                    st.write(f"**Dinner:** {day['dinner']}")
-                day_idx += 1
-
-    # ---- DOWNLOADS ----
+    # --------------------------------------------------
+    # DOWNLOADS
+    # --------------------------------------------------
     st.markdown("## ⬇️ Download")
 
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.download_button(
-            "📄 Download JSON",
-            data=pd.Series({
-                "patient": patient,
-                "conditions": conditions,
-                "diet_plan": month_plan
-            }).to_json(),
-            file_name="diet_plan.json",
-            mime="application/json"
-        )
-
-    with col2:
-        pdf_file = generate_pdf(patient, conditions, month_plan)
-        st.download_button(
-            "📑 Download PDF",
-            data=pdf_file,
-            file_name=f"{patient.replace(' ', '_')}_DietPlan.pdf",
-            mime="application/pdf"
-        )
+    st.download_button(
+        "📄 Download JSON",
+        data=pd.Series({
+            "patient": patient,
+            "conditions": conditions,
+            "diet_plan": plan
+        }).to_json(),
+        file_name="diet_plan.json",
+        mime="application/json"
+    )
