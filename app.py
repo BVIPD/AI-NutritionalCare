@@ -50,6 +50,16 @@ st.markdown("""
     display: none !important;
 }
 
+/* Hide empty vertical blocks */
+div[data-testid="stVerticalBlock"]:empty {
+    display: none !important;
+}
+
+/* Remove any stray empty divs */
+.stMarkdown:empty {
+    display: none !important;
+}
+
 div[data-testid="stVerticalBlock"] > div[style*="flex-direction: column"] > div[style*=""] {
     gap: 0 !important;
 }
@@ -68,11 +78,16 @@ header {visibility: hidden !important;}
 
 .element-container {
     margin: 0 !important;
-    padding: 0 !important;
 }
 
 div[data-testid="stVerticalBlock"] {
     gap: 0 !important;
+}
+
+/* Force no gap between elements */
+div[data-testid="stVerticalBlock"] > div {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
 }
 
 /* Main header container */
@@ -463,36 +478,30 @@ st.markdown('</div>', unsafe_allow_html=True)
 # ================================
 if st.session_state.generated:
     
-    # Patient Summary Card
-    st.markdown('<div class="summary-card">', unsafe_allow_html=True)
-    st.markdown('<h2 class="summary-title">📋 Patient Summary</h2>', unsafe_allow_html=True)
-    
+    # Patient Summary Card - All in one markdown to avoid white boxes
     st.markdown(f"""
-    <div class="info-row">
-        <span class="info-label">👤 Patient Name:</span>&nbsp;&nbsp;
-        <span class="info-value">{st.session_state.patient}</span>
+    <div class="summary-card">
+        <h2 class="summary-title">📋 Patient Summary</h2>
+        
+        <div class="info-row">
+            <span class="info-label">👤 Patient Name:</span>&nbsp;&nbsp;
+            <span class="info-value">{st.session_state.patient}</span>
+        </div>
+        
+        <div class="info-row">
+            <span class="info-label">🏥 Medical Condition:</span>&nbsp;&nbsp;
+            <span class="info-value">{', '.join(st.session_state.conditions)}</span>
+        </div>
+        
+        <div class="info-row">
+            <span class="info-label">📅 Plan Duration:</span>&nbsp;&nbsp;
+            <span class="info-value">1 Month (28 Days)</span>
+        </div>
     </div>
     """, unsafe_allow_html=True)
-    
-    st.markdown(f"""
-    <div class="info-row">
-        <span class="info-label">🏥 Medical Condition:</span>&nbsp;&nbsp;
-        <span class="info-value">{', '.join(st.session_state.conditions)}</span>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown(f"""
-    <div class="info-row">
-        <span class="info-label">📅 Plan Duration:</span>&nbsp;&nbsp;
-        <span class="info-value">1 Month (28 Days)</span>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
 
     # Week and Day Selection
-    st.markdown('<div class="selection-section">', unsafe_allow_html=True)
-    st.markdown('<p class="section-label">📅 Select Your Plan Timeline</p>', unsafe_allow_html=True)
+    st.markdown('<div class="selection-section"><p class="section-label">📅 Select Your Plan Timeline</p>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     with col1:
@@ -652,8 +661,7 @@ if st.session_state.generated:
     # ================================
     # DOWNLOAD SECTION
     # ================================
-    st.markdown('<div class="download-section">', unsafe_allow_html=True)
-    st.markdown('<h2 class="custom-subheader">📥 Download Your Diet Plan</h2>', unsafe_allow_html=True)
+    st.markdown('<div class="download-section"><h2 class="custom-subheader">📥 Download Your Diet Plan</h2>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     
