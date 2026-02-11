@@ -12,64 +12,83 @@ from reportlab.pdfgen import canvas
 st.set_page_config(
     page_title="AI-NutritionalCare",
     page_icon="🥗",
-    layout="centered"
+    layout="wide"
 )
 
 # --------------------------------------------------
-# CSS (CLEAN WHITE UI)
+# DARK UI CSS (CUSTOM)
 # --------------------------------------------------
 st.markdown("""
 <style>
 .stApp {
-    background-color: #ffffff;
-    color: #111827;
+    background: linear-gradient(180deg, #0b0f14, #111827);
+    color: #e5e7eb;
     font-family: 'Segoe UI', sans-serif;
 }
 
 .block-container {
-    max-width: 850px;
+    max-width: 1200px;
     padding-top: 2rem;
 }
 
-h1 { color: #065f46; font-size: 36px; }
-h2 { color: #047857; font-size: 26px; }
+h1, h2, h3 {
+    color: #f9fafb;
+}
 
+.subtitle {
+    color: #9ca3af;
+    font-size: 18px;
+}
+
+/* Cards */
 .card {
-    background: #f9fafb;
-    padding: 1.3rem;
-    border-radius: 14px;
-    border: 1px solid #e5e7eb;
+    background: #111827;
+    border-radius: 18px;
+    padding: 1.5rem;
+    border: 1px solid #1f2937;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.6);
     margin-bottom: 1.5rem;
 }
 
-[data-testid="stFileUploader"] {
-    background: #ecfdf5;
-    border: 2px dashed #10b981;
-    border-radius: 12px;
-    padding: 1rem;
+/* Diet cards */
+.diet-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
 }
 
-.stButton > button {
-    width: 100%;
-    background: linear-gradient(135deg, #10b981, #047857);
-    color: white;
-    border-radius: 10px;
-    padding: 0.7rem;
-    font-size: 16px;
-    font-weight: 600;
+.diet-card {
+    background: #0f172a;
+    border-radius: 16px;
+    padding: 1.2rem;
+    border: 1px solid #1e293b;
 }
 
-/* Fix expander dark bars */
-details summary {
-    background: #ffffff !important;
-    color: #111827 !important;
-    font-weight: 600;
-}
-details {
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
+.diet-title {
+    font-size: 18px;
+    font-weight: 700;
     margin-bottom: 0.5rem;
 }
+
+/* Upload */
+[data-testid="stFileUploader"] {
+    background: #020617;
+    border: 2px dashed #38bdf8;
+    border-radius: 14px;
+    padding: 1.2rem;
+}
+
+/* Button */
+.stButton > button {
+    background: linear-gradient(135deg, #22d3ee, #3b82f6);
+    color: black;
+    font-weight: 700;
+    border-radius: 12px;
+    padding: 0.8rem 2rem;
+    font-size: 16px;
+    border: none;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -79,7 +98,7 @@ details {
 st.markdown("""
 <div class="card">
 <h1>🥗 AI-NutritionalCare</h1>
-<p>AI-driven Personalized Diet Recommendation System</p>
+<p class="subtitle">AI-driven Personalized Diet Recommendation System</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -139,68 +158,31 @@ def extract_conditions(text):
     return conditions or ["General Health"]
 
 # --------------------------------------------------
-# DIET PLAN (28 DAYS)
+# SAMPLE DAY PLAN (LIKE FRIEND)
 # --------------------------------------------------
-PLAN = [
-    {"breakfast": "Oats Porridge", "lunch": "Veg Pulao", "dinner": "Chapati & Mixed Veg"}
-] * 28
-
-# --------------------------------------------------
-# PDF GENERATOR
-# --------------------------------------------------
-def generate_pdf(patient, conditions, plan):
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    y = 800
-
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(40, y, "AI-NutritionalCare Diet Report")
-    y -= 40
-
-    c.setFont("Helvetica", 11)
-    c.drawString(40, y, f"Patient: {patient}")
-    y -= 20
-    c.drawString(40, y, f"Medical Condition: {', '.join(conditions)}")
-    y -= 30
-
-    for i, day in enumerate(plan, 1):
-        if y < 120:
-            c.showPage()
-            y = 800
-
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(40, y, f"Day {i}")
-        y -= 15
-
-        c.setFont("Helvetica", 10)
-        c.drawString(50, y, f"Breakfast: {day['breakfast']}")
-        y -= 12
-        c.drawString(50, y, f"Lunch: {day['lunch']}")
-        y -= 12
-        c.drawString(50, y, f"Dinner: {day['dinner']}")
-        y -= 20
-
-    c.save()
-    buffer.seek(0)
-    return buffer
+DAY_PLAN = {
+    "Breakfast": "2 Whole Wheat Chapatis (50g each), Mixed Vegetable Sabzi, Yogurt",
+    "Lunch": "1 cup Brown Rice, Dal Tadka, Cucumber Raita, Salad",
+    "Dinner": "2 Rotis, Palak Paneer, Mixed Vegetable Salad",
+    "Snacks": "Roasted Chickpeas (30g), 1 Apple",
+    "Notes": "Hydration: Drink at least 8–10 glasses of water."
+}
 
 # --------------------------------------------------
 # INPUT
 # --------------------------------------------------
-st.markdown("## 📥 Upload Patient Data")
+st.markdown("## 📤 Upload Patient Data")
 
 uploaded = st.file_uploader(
     "Upload Medical Report (PDF / CSV / TXT)",
     type=["pdf", "csv", "txt"]
 )
 
-st.markdown("## 🥦 Food Preference")
-st.radio("", ["Vegetarian", "Non-Vegetarian"])
-
+st.radio("Food Preference", ["Vegetarian", "Non-Vegetarian"])
 run = st.button("✨ Generate Diet Recommendation")
 
 # --------------------------------------------------
-# OUTPUT (SHORT + CLEAN)
+# OUTPUT
 # --------------------------------------------------
 if run:
     if not uploaded:
@@ -212,49 +194,49 @@ if run:
     conditions = extract_conditions(text)
 
     # Patient Summary
-    st.markdown("## 📄 Patient Summary")
     st.markdown(f"""
     <div class="card">
+    <h3>Patient Summary</h3>
     <b>Patient:</b> {patient}<br>
     <b>Medical Condition:</b> {", ".join(conditions)}<br>
     <b>Plan Duration:</b> 1 Month
     </div>
     """, unsafe_allow_html=True)
 
-    # Downloads (TOP)
-    col1, col2 = st.columns(2)
-    with col1:
-        st.download_button(
-            "📄 Download JSON",
-            data=pd.Series({
-                "patient": patient,
-                "conditions": conditions,
-                "diet_plan": PLAN
-            }).to_json(),
-            file_name="diet_plan.json",
-            mime="application/json"
-        )
+    # Week Selector
+    week = st.selectbox("Select Week", ["Week 1", "Week 2", "Week 3", "Week 4"])
+    day = st.selectbox("Select Day", ["Day 1", "Day 2", "Day 3", "Day 4", "Day 5", "Day 6", "Day 7"])
 
-    with col2:
-        st.download_button(
-            "📑 Download PDF",
-            data=generate_pdf(patient, conditions, PLAN),
-            file_name=f"{patient.replace(' ', '_')}_DietPlan.pdf",
-            mime="application/pdf"
-        )
+    # Day Card Layout (LIKE FRIEND)
+    st.markdown(f"""
+    <div class="card">
+    <h2>{day} Diet Plan</h2>
 
-    # Diet Plan (Week Tabs)
-    st.markdown("## 🗓️ 1-Month Diet Plan")
+    <div class="diet-grid">
+        <div class="diet-card">
+            <div class="diet-title">🍳 Breakfast</div>
+            {DAY_PLAN["Breakfast"]}
+        </div>
 
-    tabs = st.tabs(["Week 1", "Week 2", "Week 3", "Week 4"])
-    idx = 0
+        <div class="diet-card">
+            <div class="diet-title">🍛 Lunch</div>
+            {DAY_PLAN["Lunch"]}
+        </div>
 
-    for tab in tabs:
-        with tab:
-            for _ in range(7):
-                day = PLAN[idx]
-                with st.expander(f"🍽️ Day {idx + 1}"):
-                    st.write(f"**Breakfast:** {day['breakfast']}")
-                    st.write(f"**Lunch:** {day['lunch']}")
-                    st.write(f"**Dinner:** {day['dinner']}")
-                idx += 1
+        <div class="diet-card">
+            <div class="diet-title">🌙 Dinner</div>
+            {DAY_PLAN["Dinner"]}
+        </div>
+
+        <div class="diet-card">
+            <div class="diet-title">🍎 Snacks</div>
+            {DAY_PLAN["Snacks"]}
+        </div>
+
+        <div class="diet-card">
+            <div class="diet-title">📝 Notes</div>
+            {DAY_PLAN["Notes"]}
+        </div>
+    </div>
+    </div>
+    """, unsafe_allow_html=True)
