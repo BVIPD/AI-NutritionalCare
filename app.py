@@ -7,93 +7,194 @@ from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
-st.set_page_config(page_title="AI-NutritionalCare", page_icon="🥗", layout="centered")
+st.set_page_config(page_title="DietPlanner AI", page_icon="🥗", layout="centered")
 
-if "generated" not in st.session_state:
-    st.session_state.generated = False
+# Initialize session state
+if "step" not in st.session_state:
+    st.session_state.step = 1
 if "patient" not in st.session_state:
     st.session_state.patient = ""
 if "conditions" not in st.session_state:
     st.session_state.conditions = []
+if "food_pref" not in st.session_state:
+    st.session_state.food_pref = "Vegetarian"
+if "budget" not in st.session_state:
+    st.session_state.budget = "Medium"
+if "duration" not in st.session_state:
+    st.session_state.duration = 7
 if "full_plan" not in st.session_state:
     st.session_state.full_plan = {}
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 * {font-family: 'Inter', sans-serif !important;}
-.stApp {background: #f5f5f5 !important;}
-.main .block-container {max-width: 1000px !important; padding: 1rem !important;}
+.stApp {background: #f5f7fa !important;}
+.main .block-container {max-width: 900px !important; padding: 2rem 1rem !important;}
 #MainMenu, footer, header {display: none !important;}
-section[data-testid="stSidebar"] {display: none !important;}
-.element-container {background: transparent !important; padding: 0 !important; margin: 0 !important;}
-div[data-testid="stVerticalBlock"] {gap: 0 !important; background: transparent !important;}
-.stMarkdown {background: transparent !important; margin: 0 !important;}
-.stButton > button {background: #2563eb !important; color: white !important; border: none !important; padding: 0.75rem 2rem !important; border-radius: 8px !important; font-weight: 600 !important; width: 100% !important;}
-.stDownloadButton > button {background: #059669 !important; color: white !important; border: none !important; padding: 0.75rem 2rem !important; border-radius: 8px !important; font-weight: 600 !important; width: 100% !important;}
-[data-testid="stFileUploader"] {background: transparent !important; border: 2px dashed #cbd5e1 !important; border-radius: 8px !important; padding: 1.5rem !important;}
-.stSelectbox label {color: #000 !important; font-weight: 600 !important;}
-.stSelectbox div[data-baseweb="select"] {background-color: #1e293b !important;}
-.stSelectbox div[data-baseweb="select"] > div {background-color: #1e293b !important; color: white !important; font-weight: 500 !important;}
-.stSelectbox svg {fill: white !important;}
-[role="listbox"] {background-color: #1e293b !important;}
-[role="option"] {background-color: #1e293b !important; color: white !important;}
-[role="option"]:hover {background-color: #334155 !important;}
-[data-baseweb="select"] span {color: white !important;}
-[data-testid="stMetricValue"] {color: #000 !important; font-size: 1.25rem !important; font-weight: 600 !important;}
-[data-testid="stMetricLabel"] {color: #000 !important; font-weight: 600 !important;}
-h1, h2, h3 {color: #000 !important;}
+
+/* Blue header */
+.header-bar {
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    padding: 1.5rem 2rem;
+    border-radius: 0;
+    margin: -2rem -1rem 2rem -1rem;
+}
+
+/* Step indicator */
+.step-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin: 0 0.5rem;
+}
+
+.step-active {
+    background: #1e3a2e;
+    color: white;
+}
+
+.step-inactive {
+    background: white;
+    color: #94a3b8;
+    border: 2px solid #e2e8f0;
+}
+
+/* Card styles */
+.upload-card {
+    background: white;
+    border: 2px dashed #cbd5e1;
+    border-radius: 16px;
+    padding: 3rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 1rem;
+}
+
+.upload-card:hover {
+    border-color: #2563eb;
+    background: #f8fafc;
+}
+
+/* Buttons */
+.stButton > button {
+    background: #1e3a2e !important;
+    color: white !important;
+    border: none !important;
+    padding: 0.875rem 3rem !important;
+    border-radius: 50px !important;
+    font-weight: 600 !important;
+    font-size: 1.1rem !important;
+    width: 100% !important;
+}
+
+.option-btn {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 50px;
+    padding: 1rem 2rem;
+    margin: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    color: #475569;
+}
+
+.option-btn-selected {
+    background: #1e3a2e;
+    color: white;
+    border-color: #1e3a2e;
+}
+
+/* Meal cards */
+.meal-card {
+    background: #fafaf9;
+    border: 1px solid #e7e5e4;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+}
+
+.calorie-badge {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+/* Recommendations */
+.rec-box {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1rem;
+}
+
+.limit-box {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1rem;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# MEAL OPTIONS - Different meals for variety
-BREAKFAST_OPTIONS = [
-    "2 Whole Wheat Chapatis (50g each), Mixed Vegetable Sabzi, Yogurt",
-    "Oatmeal with Berries, Almonds, and Low-fat Milk",
-    "Poha with Vegetables, Peanuts, and Green Chutney",
-    "Idli (3pcs) with Sambar and Coconut Chutney",
-    "Upma with Vegetables and a Glass of Buttermilk",
-    "Vegetable Paratha (2) with Curd and Pickle",
-    "Moong Dal Cheela with Mint Chutney"
-]
+# MEAL DATA
+VEG_MEALS = {
+    "Morning": [
+        {"name": "Oatmeal with banana", "portion": "1 cup cooked oats + 1 medium banana", "calories": 320, "benefit": "High soluble fiber lowers cholesterol and stabilizes blood sugar"},
+        {"name": "Poha with vegetables", "portion": "1 plate (200g)", "calories": 250, "benefit": "Light breakfast, easy to digest, provides steady energy"},
+        {"name": "Idli with sambar", "portion": "3 idlis + 1 bowl sambar", "calories": 280, "benefit": "Fermented food aids digestion, low in calories"}
+    ],
+    "Afternoon": [
+        {"name": "Dal khichdi with curd", "portion": "1 bowl (250g)", "calories": 300, "benefit": "Complete protein, easy on stomach, good for weight management"},
+        {"name": "Quinoa vegetable pulao", "portion": "1 bowl (200g)", "calories": 280, "benefit": "High protein grain alternative, gluten-free"},
+        {"name": "Mixed veg curry with roti", "portion": "2 rotis + 1 bowl curry", "calories": 350, "benefit": "Fiber-rich vegetables support digestive health"}
+    ],
+    "Evening": [
+        {"name": "Mixed vegetable soup", "portion": "1 bowl (300ml)", "calories": 120, "benefit": "Low calorie, high micronutrient density supports weight management"},
+        {"name": "Paneer tikka salad", "portion": "150g paneer + salad", "calories": 280, "benefit": "High protein, calcium-rich, supports bone health"},
+        {"name": "Vegetable cutlets", "portion": "2 pieces", "calories": 180, "benefit": "Nutrient-dense snack with minimal oil"}
+    ],
+    "Night": [
+        {"name": "Warm turmeric milk", "portion": "200ml low-fat milk + pinch turmeric", "calories": 90, "benefit": "Anti-inflammatory properties, supports overnight recovery"},
+        {"name": "Chamomile tea", "portion": "1 cup", "calories": 5, "benefit": "Promotes better sleep, aids digestion"},
+        {"name": "Almond milk", "portion": "200ml", "calories": 60, "benefit": "Low calorie, rich in vitamin E"}
+    ]
+}
 
-LUNCH_OPTIONS = [
-    "1 cup Brown Rice, Dal Tadka, Cucumber Raita, Salad",
-    "2 Rotis, Rajma Curry, Jeera Rice, Mixed Salad",
-    "Quinoa Pulao, Mixed Vegetable Curry, Raita",
-    "2 Multigrain Rotis, Chana Masala, Vegetable Salad",
-    "Brown Rice, Sambhar, Cabbage Poriyal, Curd",
-    "2 Rotis, Mix Veg Sabzi, Dal Fry, Salad",
-    "Millet Khichdi with Curd and Papad"
-]
-
-DINNER_OPTIONS = [
-    "2 Rotis, Palak Paneer, Mixed Vegetable Salad",
-    "Grilled Paneer, Quinoa, Stir-fried Vegetables",
-    "2 Rotis, Bhindi Masala, Tomato Soup",
-    "Brown Rice, Moong Dal, Bottle Gourd Curry",
-    "2 Chapatis, Tofu Curry, Green Salad",
-    "Vegetable Soup, Grilled Vegetables, 1 Roti",
-    "2 Rotis, Baingan Bharta, Sprouts Salad"
-]
-
-SNACKS_OPTIONS = [
-    "Roasted Chickpeas (30g), 1 Apple",
-    "Mixed Nuts (30g), 1 Orange",
-    "Carrot Sticks with Hummus",
-    "Greek Yogurt with Berries",
-    "Sprouts Salad with Lemon",
-    "Roasted Makhana (30g), Green Tea",
-    "Fruit Salad (Apple, Banana, Pomegranate)"
-]
-
-NOTES_OPTIONS = [
-    "Drink at least 8–10 glasses of water. Avoid sugary drinks.",
-    "Stay hydrated. Limit salt intake. Include a 30-min walk.",
-    "Avoid processed foods. Practice portion control.",
-    "Include fiber-rich foods. Limit oil and sugar.",
-    "Eat at regular intervals. Avoid late-night meals."
-]
+NONVEG_MEALS = {
+    "Morning": [
+        {"name": "Egg white omelette with toast", "portion": "3 egg whites + 2 toast", "calories": 280, "benefit": "High protein, low fat, supports muscle maintenance"},
+        {"name": "Chicken sandwich", "portion": "Grilled chicken + whole wheat bread", "calories": 320, "benefit": "Lean protein source, filling breakfast"},
+        {"name": "Boiled eggs with fruit", "portion": "2 eggs + 1 apple", "calories": 260, "benefit": "Complete protein with vitamins and fiber"}
+    ],
+    "Afternoon": [
+        {"name": "Grilled chicken breast", "portion": "150g chicken + salad", "calories": 248, "benefit": "Lean protein supports muscle maintenance without raising LDL"},
+        {"name": "Fish curry with rice", "portion": "100g fish + 1 cup rice", "calories": 380, "benefit": "Omega-3 fatty acids support heart health"},
+        {"name": "Chicken stir-fry", "portion": "150g chicken + vegetables", "calories": 290, "benefit": "High protein, low carb, balanced meal"}
+    ],
+    "Evening": [
+        {"name": "Chicken soup", "portion": "1 bowl (300ml)", "calories": 180, "benefit": "Protein-rich, hydrating, easy to digest"},
+        {"name": "Tuna salad", "portion": "100g tuna + vegetables", "calories": 200, "benefit": "Omega-3 rich, supports cardiovascular health"},
+        {"name": "Grilled fish", "portion": "100g", "calories": 150, "benefit": "Low calorie, high protein evening option"}
+    ],
+    "Night": [
+        {"name": "Warm turmeric milk", "portion": "200ml low-fat milk + pinch turmeric", "calories": 90, "benefit": "Anti-inflammatory properties, supports overnight recovery"},
+        {"name": "Green tea", "portion": "1 cup", "calories": 5, "benefit": "Antioxidants, promotes better sleep"},
+        {"name": "Protein shake", "portion": "1 scoop + water", "calories": 120, "benefit": "Supports muscle recovery overnight"}
+    ]
+}
 
 def extract_text_from_file(file):
     text = ""
@@ -115,7 +216,7 @@ def extract_patient_name(text):
         m = re.search(p, text, re.I)
         if m:
             return m.group(1).strip()
-    return "Patient Name Not Found"
+    return "Patient"
 
 def extract_conditions(text):
     t = text.lower()
@@ -123,125 +224,216 @@ def extract_conditions(text):
     if "diabetes" in t: cond.append("Diabetes")
     if "cholesterol" in t: cond.append("High Cholesterol")
     if "hypertension" in t: cond.append("Hypertension")
+    if "anemia" in t or "anaemia" in t: cond.append("Anemia")
     return cond or ["General Health"]
 
-def generate_28_day_plan():
+def generate_diet_plan(food_pref, duration):
+    meals = VEG_MEALS if food_pref == "Vegetarian" else NONVEG_MEALS
     plan = {}
-    for day in range(1, 29):
+    for day in range(1, duration + 1):
         plan[f"Day {day}"] = {
-            "Breakfast": random.choice(BREAKFAST_OPTIONS),
-            "Lunch": random.choice(LUNCH_OPTIONS),
-            "Dinner": random.choice(DINNER_OPTIONS),
-            "Snacks": random.choice(SNACKS_OPTIONS),
-            "Notes": random.choice(NOTES_OPTIONS)
+            "Morning": random.choice(meals["Morning"]),
+            "Afternoon": random.choice(meals["Afternoon"]),
+            "Evening": random.choice(meals["Evening"]),
+            "Night": random.choice(meals["Night"])
         }
     return plan
 
-def generate_pdf(patient, conditions, full_plan):
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    y = 800
-    
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(40, y, "AI-NutritionalCare - 28 Day Diet Plan")
-    y -= 30
-    
-    c.setFont("Helvetica", 11)
-    c.drawString(40, y, f"Patient: {patient}")
-    y -= 20
-    c.drawString(40, y, f"Conditions: {', '.join(conditions)}")
-    y -= 30
-    
-    for day_name, meals in full_plan.items():
-        if y < 100:
-            c.showPage()
-            y = 800
-        
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(40, y, day_name)
-        y -= 18
-        
-        c.setFont("Helvetica", 9)
-        for meal, food in meals.items():
-            c.drawString(50, y, f"{meal}: {food[:80]}")
-            y -= 14
-        y -= 10
-    
-    c.save()
-    buffer.seek(0)
-    return buffer
-
-st.markdown("""
-<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1rem;">
-    <h1 style="font-size: 2.25rem; font-weight: 700; color: #000; margin: 0;">🥗 AI-NutritionalCare</h1>
-    <p style="font-size: 1rem; color: #666; margin: 0.5rem 0 0 0;">Your Personalized AI-Powered Diet Companion</p>
+# HEADER
+st.markdown(f"""
+<div class="header-bar">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center;">
+            <span style="font-size: 2rem; margin-right: 1rem;">🥗</span>
+            <div>
+                <h1 style="color: white; margin: 0; font-size: 1.75rem; font-weight: 700;">DietPlanner AI</h1>
+                <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 0.95rem;">Personalised nutrition guidance</p>
+            </div>
+        </div>
+        {'<button onclick="location.reload()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 0.5rem 1.5rem; border-radius: 50px; cursor: pointer; font-weight: 600;">🔄 Start Over</button>' if st.session_state.step > 1 else ''}
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown('<div style="background: white; padding: 1.75rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1rem;">', unsafe_allow_html=True)
-uploaded = st.file_uploader("📄 Upload Medical Report (PDF/TXT/CSV)", type=["pdf", "txt", "csv"])
-if st.button("✨ Generate 28-Day Diet Plan"):
-    if uploaded:
-        with st.spinner("Generating your personalized 28-day meal plan..."):
-            text = extract_text_from_file(uploaded)
-            st.session_state.patient = extract_patient_name(text)
-            st.session_state.conditions = extract_conditions(text)
-            st.session_state.full_plan = generate_28_day_plan()
-            st.session_state.generated = True
-        st.success("✅ 28-day diet plan generated!")
-    else:
-        st.warning("⚠️ Please upload a report")
-st.markdown('</div>', unsafe_allow_html=True)
+# STEP INDICATOR
+st.markdown(f"""
+<div style="text-align: center; margin: 2rem 0;">
+    <span class="step-circle {'step-active' if st.session_state.step >= 1 else 'step-inactive'}">1</span>
+    <span style="color: #cbd5e1;">━━━</span>
+    <span class="step-circle {'step-active' if st.session_state.step >= 2 else 'step-inactive'}">2</span>
+    <span style="color: #cbd5e1;">━━━</span>
+    <span class="step-circle {'step-active' if st.session_state.step >= 3 else 'step-inactive'}">3</span>
+</div>
+""", unsafe_allow_html=True)
 
-if st.session_state.generated:
+# STEP 1: UPLOAD
+if st.session_state.step == 1:
+    st.markdown("""
+    <div style="text-align: center; margin: 2rem 0;">
+        <h2 style="font-size: 2.25rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem;">Upload Your Medical Report</h2>
+        <p style="color: #64748b; font-size: 1.1rem;">Share your medical information to receive a personalised diet plan</p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    st.markdown('<div style="background: white; padding: 1.75rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1rem;">', unsafe_allow_html=True)
-    st.subheader("📋 Patient Summary")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown('<div class="upload-card">📄<br><b>Text Document</b><br><small>Click to browse</small></div>', unsafe_allow_html=True)
+    with col2:
+        st.markdown('<div class="upload-card">📋<br><b>PDF Document</b><br><small>Click to browse</small></div>', unsafe_allow_html=True)
+    with col3:
+        st.markdown('<div class="upload-card">🖼️<br><b>Scanned Image</b><br><small>Click to browse</small></div>', unsafe_allow_html=True)
+    
+    uploaded = st.file_uploader("", type=["pdf", "txt", "csv", "png", "jpg"], label_visibility="collapsed")
+    
+    if uploaded:
+        st.success(f"✅ File Uploaded Successfully: {uploaded.name}")
+        text = extract_text_from_file(uploaded)
+        st.session_state.patient = extract_patient_name(text)
+        st.session_state.conditions = extract_conditions(text)
+        st.session_state.step = 2
+        st.rerun()
+
+# STEP 2: PREFERENCES
+elif st.session_state.step == 2:
+    st.markdown("<h2 style='text-align: center; font-size: 2rem; font-weight: 700; color: #1e293b; margin-bottom: 2rem;'>Set Your Preferences</h2>", unsafe_allow_html=True)
+    
+    st.markdown("<h3 style='font-size: 1.25rem; color: #1e293b; margin: 2rem 0 1rem 0;'>🥗 Food Preference</h3>", unsafe_allow_html=True)
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🌾 Vegetarian", key="veg", use_container_width=True):
+            st.session_state.food_pref = "Vegetarian"
+    with col2:
+        if st.button("🍖 Non-Vegetarian", key="nonveg", use_container_width=True):
+            st.session_state.food_pref = "Non-Vegetarian"
+    
+    st.markdown(f"<p style='text-align: center; color: #1e3a2e; font-weight: 600; margin: 1rem 0;'>Selected: {st.session_state.food_pref}</p>", unsafe_allow_html=True)
+    
+    st.markdown("<h3 style='font-size: 1.25rem; color: #1e293b; margin: 2rem 0 1rem 0;'>💰 Budget Range</h3>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("👤 Patient", st.session_state.patient)
+        if st.button("Low", key="low", use_container_width=True):
+            st.session_state.budget = "Low"
     with col2:
-        st.metric("🏥 Condition", ', '.join(st.session_state.conditions))
+        if st.button("Medium", key="med", use_container_width=True):
+            st.session_state.budget = "Medium"
     with col3:
-        st.metric("📅 Duration", "28 Days")
-    st.markdown('</div>', unsafe_allow_html=True)
+        if st.button("High", key="high", use_container_width=True):
+            st.session_state.budget = "High"
     
-    st.markdown('<div style="background: #1e293b; padding: 1.75rem; border-radius: 12px; margin-bottom: 1rem;"><h3 style="color: white !important; margin: 0 0 1rem 0; font-size: 1.25rem;">📅 Select Day</h3></div>', unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; color: #2563eb; font-weight: 600; margin: 1rem 0;'>Selected: {st.session_state.budget}</p>", unsafe_allow_html=True)
     
-    day_options = [f"Day {i}" for i in range(1, 29)]
-    selected_day = st.selectbox("Choose Day", day_options)
+    st.markdown("<h3 style='font-size: 1.25rem; color: #1e293b; margin: 2rem 0 1rem 0;'>📅 Diet Plan Duration</h3>", unsafe_allow_html=True)
+    st.session_state.duration = st.slider("", 1, 30, 7, label_visibility="collapsed")
+    st.markdown(f"<h2 style='text-align: center; font-size: 2.5rem; font-weight: 700; color: #1e293b; margin: 1rem 0;'>{st.session_state.duration} days</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #64748b;'>1 day ← → 30 days</p>", unsafe_allow_html=True)
     
-    day_plan = st.session_state.full_plan[selected_day]
-    
-    st.markdown('<div style="background: white; padding: 1.75rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1rem; margin-top: 1rem;">', unsafe_allow_html=True)
-    st.subheader(f"🍽️ {selected_day} Diet Plan")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("### 🍳 Breakfast")
-        st.info(day_plan["Breakfast"])
-        st.markdown("### 🍛 Lunch")
-        st.info(day_plan["Lunch"])
-    with col2:
-        st.markdown("### 🌙 Dinner")
-        st.info(day_plan["Dinner"])
-        st.markdown("### 🍎 Snacks")
-        st.info(day_plan["Snacks"])
-    st.success(f"💡 {day_plan['Notes']}")
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.markdown('<div style="background: white; padding: 1.75rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1rem;">', unsafe_allow_html=True)
-    st.subheader("📥 Download Complete 28-Day Plan")
-    col1, col2 = st.columns(2)
-    with col1:
-        json_data = {
-            "patient": st.session_state.patient,
-            "conditions": st.session_state.conditions,
-            "duration": "28 Days",
-            "meal_plan": st.session_state.full_plan
-        }
-        st.download_button("📄 Download JSON (All 28 Days)", data=pd.Series(json_data).to_json(indent=2), file_name="28_day_diet_plan.json", mime="application/json")
-    with col2:
-        st.download_button("📑 Download PDF (All 28 Days)", data=generate_pdf(st.session_state.patient, st.session_state.conditions, st.session_state.full_plan), file_name="28_day_diet_plan.pdf", mime="application/pdf")
-    st.markdown('</div>', unsafe_allow_html=True)
+    if st.button("✨ Generate Diet Plan", use_container_width=True):
+        st.session_state.full_plan = generate_diet_plan(st.session_state.food_pref, st.session_state.duration)
+        st.session_state.step = 3
+        st.rerun()
 
-st.markdown('<div style="background: white; padding: 1.25rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center;"><p style="color: #666; margin: 0; font-size: 0.9rem;">Made with ❤️ by AI-NutritionalCare Team</p></div>', unsafe_allow_html=True)
+# STEP 3: RESULTS
+elif st.session_state.step == 3:
+    st.markdown(f"<h2 style='text-align: center; font-size: 2rem; font-weight: 700; color: #1e293b; margin-bottom: 2rem;'>🍽️ Your {st.session_state.duration}-Day Diet Plan</h2>", unsafe_allow_html=True)
+    
+    # Day selector
+    cols = st.columns(min(7, st.session_state.duration))
+    selected_day = 1
+    for i in range(min(7, st.session_state.duration)):
+        with cols[i]:
+            if st.button(f"Day {i+1}", key=f"day_{i+1}", use_container_width=True):
+                selected_day = i + 1
+    
+    day_plan = st.session_state.full_plan[f"Day {selected_day}"]
+    total_cal = sum(meal["calories"] for meal in day_plan.values())
+    
+    # Display meals
+    for time, meal_data in day_plan.items():
+        st.markdown(f"""
+        <div class="meal-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="color: #1e293b; font-size: 1.25rem; font-weight: 600; margin: 0;">
+                    {'🌅' if time == 'Morning' else '☀️' if time == 'Afternoon' else '🌆' if time == 'Evening' else '🌙'} {time}
+                </h3>
+                <span class="calorie-badge">{meal_data['calories']} kcal</span>
+            </div>
+            <h4 style="color: #1e293b; font-size: 1.1rem; font-weight: 600; margin: 0.5rem 0;">{meal_data['name']}</h4>
+            <p style="color: #64748b; font-size: 0.95rem; margin: 0.5rem 0;">🍴 {meal_data['portion']}</p>
+            <p style="color: #475569; font-size: 0.95rem; margin: 0.75rem 0;">{meal_data['benefit']}</p>
+            <p style="color: #16a34a; font-size: 0.875rem; font-weight: 500; margin: 0.5rem 0;">💊 Clinical recommendation for {', '.join(st.session_state.conditions)}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown(f"""
+    <div style="background: #d1fae5; padding: 1.5rem; border-radius: 12px; text-align: center; margin: 2rem 0;">
+        <h3 style="color: #1e293b; font-weight: 700; margin: 0;">Day {selected_day} Total: {total_cal} kcal</h3>
+    </div>
+    <div style="background: #e0f2fe; padding: 1.5rem; border-radius: 12px; text-align: center;">
+        <p style="color: #0c4a6e; font-weight: 600; margin: 0;">Daily Target Range: 1700-2000 kcal/day based on patient profile</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Recommendations
+    st.markdown("""
+    <h3 style="font-size: 1.5rem; color: #1e293b; margin: 3rem 0 1.5rem 0;">📋 Dietary Recommendations</h3>
+    """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("""
+        <div class="rec-box">
+            <h4 style="color: #16a34a; font-weight: 700; margin-bottom: 1rem;">✅ Foods to Favour</h4>
+            <p style="color: #15803d; margin: 0.5rem 0;">• Oats and barley — soluble fiber lowers blood cholesterol and prediabetes</p>
+            <p style="color: #15803d; margin: 0.5rem 0;">• Leafy greens — magnesium supports insulin sensitivity</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="limit-box">
+            <h4 style="color: #dc2626; font-weight: 700; margin-bottom: 1rem;">⚠️ Foods to Limit</h4>
+            <p style="color: #991b1b; margin: 0.5rem 0;">• Refined sugars — rapidly spike blood glucose</p>
+            <p style="color: #991b1b; margin: 0.5rem 0;">• Processed meats — high sodium worsens hypertension</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("""
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 1.5rem;">
+            <h4 style="color: #1e40af; font-weight: 700; margin-bottom: 1rem;">🔬 Key Nutrients</h4>
+            <p style="color: #1e3a8a; margin: 0.5rem 0;">• Magnesium</p>
+            <p style="color: #1e3a8a; margin: 0.5rem 0;">• Potassium</p>
+            <p style="color: #1e3a8a; margin: 0.5rem 0;">• Soluble fiber</p>
+            <p style="color: #1e3a8a; margin: 0.5rem 0;">• Omega-3 fatty acids</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div style="background: #fefce8; border: 1px solid #fde047; border-radius: 12px; padding: 1.5rem;">
+            <h4 style="color: #a16207; font-weight: 700; margin-bottom: 1rem;">💡 Lifestyle Tips</h4>
+            <p style="color: #854d0e; margin: 0.5rem 0;">• Eat at regular intervals every 3-4 hours to maintain blood sugar stability</p>
+            <p style="color: #854d0e; margin: 0.5rem 0;">• Drink 8-10 glasses of water daily</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div style="background: #fef9c3; border: 1px solid #fbbf24; border-radius: 12px; padding: 1.5rem; margin: 2rem 0;">
+        <p style="color: #78350f; margin: 0; font-size: 0.95rem;">
+            ⚠️ <b>Medical Disclaimer:</b> This diet plan is based on the provided medical data and is not a substitute for professional medical advice. 
+            Please consult with a healthcare provider or registered dietitian before making significant dietary changes.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Download buttons
+    col1, col2 = st.columns(2)
+    with col1:
+        json_data = {"patient": st.session_state.patient, "conditions": st.session_state.conditions, "duration": f"{st.session_state.duration} Days", "food_preference": st.session_state.food_pref, "meal_plan": st.session_state.full_plan}
+        st.download_button("📥 Download Report (.txt)", data=str(json_data), file_name=f"{st.session_state.duration}_day_plan.txt", mime="text/plain", use_container_width=True)
+    with col2:
+        if st.button("🔄 New Plan", use_container_width=True):
+            st.session_state.step = 1
+            st.rerun()
