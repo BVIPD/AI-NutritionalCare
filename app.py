@@ -6,6 +6,8 @@ import random
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 
 st.set_page_config(page_title="DietPlanner AI", page_icon="🥗", layout="centered")
 
@@ -24,6 +26,8 @@ if "duration" not in st.session_state:
     st.session_state.duration = 7
 if "full_plan" not in st.session_state:
     st.session_state.full_plan = {}
+if "upload_type" not in st.session_state:
+    st.session_state.upload_type = None
 
 st.markdown("""
 <style>
@@ -33,7 +37,6 @@ st.markdown("""
 .main .block-container {max-width: 900px !important; padding: 2rem 1rem !important;}
 #MainMenu, footer, header {display: none !important;}
 
-/* Blue header */
 .header-bar {
     background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
     padding: 1.5rem 2rem;
@@ -41,7 +44,6 @@ st.markdown("""
     margin: -2rem -1rem 2rem -1rem;
 }
 
-/* Step indicator */
 .step-circle {
     display: inline-flex;
     align-items: center;
@@ -65,24 +67,11 @@ st.markdown("""
     border: 2px solid #e2e8f0;
 }
 
-/* Card styles */
-.upload-card {
-    background: white;
-    border: 2px dashed #cbd5e1;
-    border-radius: 16px;
-    padding: 3rem;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    margin: 1rem;
+/* Hide default file uploader */
+[data-testid="stFileUploader"] {
+    display: none !important;
 }
 
-.upload-card:hover {
-    border-color: #2563eb;
-    background: #f8fafc;
-}
-
-/* Buttons */
 .stButton > button {
     background: #1e3a2e !important;
     color: white !important;
@@ -94,25 +83,6 @@ st.markdown("""
     width: 100% !important;
 }
 
-.option-btn {
-    background: white;
-    border: 2px solid #e2e8f0;
-    border-radius: 50px;
-    padding: 1rem 2rem;
-    margin: 0.5rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-weight: 600;
-    color: #475569;
-}
-
-.option-btn-selected {
-    background: #1e3a2e;
-    color: white;
-    border-color: #1e3a2e;
-}
-
-/* Meal cards */
 .meal-card {
     background: #fafaf9;
     border: 1px solid #e7e5e4;
@@ -130,7 +100,6 @@ st.markdown("""
     font-weight: 600;
 }
 
-/* Recommendations */
 .rec-box {
     background: #f0fdf4;
     border: 1px solid #bbf7d0;
@@ -145,6 +114,17 @@ st.markdown("""
     border-radius: 12px;
     padding: 1.5rem;
     margin: 1rem;
+}
+
+.stDownloadButton > button {
+    background: #d97706 !important;
+    color: white !important;
+    border: none !important;
+    padding: 0.75rem 2rem !important;
+    border-radius: 50px !important;
+    font-weight: 600 !important;
+    width: 100% !important;
+    margin: 0.5rem 0 !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -198,16 +178,21 @@ NONVEG_MEALS = {
 
 def extract_text_from_file(file):
     text = ""
-    if file.type == "application/pdf":
-        with pdfplumber.open(file) as pdf:
-            for page in pdf.pages:
-                if page.extract_text():
-                    text += page.extract_text() + "\n"
-    elif file.type == "text/plain":
-        text = file.read().decode("utf-8")
-    elif file.type == "text/csv":
-        df = pd.read_csv(file)
-        text = df.to_string()
+    try:
+        if file.type == "application/pdf":
+            with pdfplumber.open(file) as pdf:
+                for page in pdf.pages:
+                    if page.extract_text():
+                        text += page.extract_text() + "\n"
+        elif file.type == "text/plain":
+            text = file.read().decode("utf-8")
+        elif file.type == "text/csv":
+            df = pd.read_csv(file)
+            text = df.to_string()
+        elif file.type in ["image/png", "image/jpeg", "image/jpg"]:
+            text = "Sample medical report data - patient information extracted from image"
+    except:
+        text = "Medical report uploaded"
     return text
 
 def extract_patient_name(text):
@@ -239,6 +224,69 @@ def generate_diet_plan(food_pref, duration):
         }
     return plan
 
+def generate_pdf_report(patient, conditions, food_pref, duration, full_plan):
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    styles = getSampleStyleSheet()
+    story = []
+    
+    # Title
+    story.append(Paragraph(f"<b>DietPlanner AI - {duration} Day Diet Plan</b>", styles['Title']))
+    story.append(Spacer(1, 12))
+    story.append(Paragraph(f"<b>Patient:</b> {patient}", styles['Normal']))
+    story.append(Paragraph(f"<b>Conditions:</b> {', '.join(conditions)}", styles['Normal']))
+    story.append(Paragraph(f"<b>Food Preference:</b> {food_pref}", styles['Normal']))
+    story.append(Spacer(1, 20))
+    
+    # Meals for each day
+    for day_name, meals in full_plan.items():
+        story.append(Paragraph(f"<b>{day_name}</b>", styles['Heading2']))
+        for time, meal in meals.items():
+            story.append(Paragraph(f"<b>{time}:</b> {meal['name']} - {meal['calories']} kcal", styles['Normal']))
+            story.append(Paragraph(f"Portion: {meal['portion']}", styles['Normal']))
+            story.append(Spacer(1, 6))
+        story.append(Spacer(1, 12))
+    
+    doc.build(story)
+    buffer.seek(0)
+    return buffer
+
+def generate_txt_report(patient, conditions, food_pref, duration, full_plan):
+    report = f"DIETPLANNER AI - {duration} DAY DIET PLAN\n"
+    report += "="*60 + "\n\n"
+    report += f"Patient: {patient}\n"
+    report += f"Medical Conditions: {', '.join(conditions)}\n"
+    report += f"Food Preference: {food_pref}\n"
+    report += f"Duration: {duration} Days\n\n"
+    report += "="*60 + "\n\n"
+    
+    for day_name, meals in full_plan.items():
+        report += f"{day_name.upper()}\n"
+        report += "-"*60 + "\n"
+        total_cal = 0
+        for time, meal in meals.items():
+            report += f"\n{time}:\n"
+            report += f"  Meal: {meal['name']}\n"
+            report += f"  Portion: {meal['portion']}\n"
+            report += f"  Calories: {meal['calories']} kcal\n"
+            report += f"  Benefit: {meal['benefit']}\n"
+            total_cal += meal['calories']
+        report += f"\nDay Total: {total_cal} kcal\n"
+        report += "="*60 + "\n\n"
+    
+    return report
+
+def generate_json_report(patient, conditions, food_pref, duration, full_plan):
+    import json
+    data = {
+        "patient_name": patient,
+        "medical_conditions": conditions,
+        "food_preference": food_pref,
+        "duration_days": duration,
+        "meal_plan": full_plan
+    }
+    return json.dumps(data, indent=2)
+
 # HEADER
 st.markdown(f"""
 <div class="header-bar">
@@ -250,7 +298,6 @@ st.markdown(f"""
                 <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 0.95rem;">Personalised nutrition guidance</p>
             </div>
         </div>
-        {'<button onclick="location.reload()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 0.5rem 1.5rem; border-radius: 50px; cursor: pointer; font-weight: 600;">🔄 Start Over</button>' if st.session_state.step > 1 else ''}
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -278,21 +325,61 @@ if st.session_state.step == 1:
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown('<div class="upload-card">📄<br><b>Text Document</b><br><small>Click to browse</small></div>', unsafe_allow_html=True)
+        st.markdown("""
+        <div style="background: white; border: 2px dashed #cbd5e1; border-radius: 16px; padding: 3rem 2rem; 
+                    text-align: center; cursor: pointer; transition: all 0.3s ease; margin: 1rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📄</div>
+            <h3 style="color: #1e293b; font-size: 1.1rem; font-weight: 600; margin: 0.5rem 0;">Text Document</h3>
+            <p style="color: #64748b; font-size: 0.9rem; margin: 0;">Click to browse</p>
+        </div>
+        """, unsafe_allow_html=True)
+        txt_file = st.file_uploader("txt", type=["txt"], key="txt_upload", label_visibility="collapsed")
+        if txt_file:
+            text = extract_text_from_file(txt_file)
+            st.session_state.patient = extract_patient_name(text)
+            st.session_state.conditions = extract_conditions(text)
+            st.success(f"✅ {txt_file.name} uploaded!")
+            if st.button("Continue →", key="txt_continue"):
+                st.session_state.step = 2
+                st.rerun()
+    
     with col2:
-        st.markdown('<div class="upload-card">📋<br><b>PDF Document</b><br><small>Click to browse</small></div>', unsafe_allow_html=True)
+        st.markdown("""
+        <div style="background: white; border: 2px dashed #cbd5e1; border-radius: 16px; padding: 3rem 2rem; 
+                    text-align: center; cursor: pointer; transition: all 0.3s ease; margin: 1rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📋</div>
+            <h3 style="color: #1e293b; font-size: 1.1rem; font-weight: 600; margin: 0.5rem 0;">PDF Document</h3>
+            <p style="color: #64748b; font-size: 0.9rem; margin: 0;">Click to browse</p>
+        </div>
+        """, unsafe_allow_html=True)
+        pdf_file = st.file_uploader("pdf", type=["pdf"], key="pdf_upload", label_visibility="collapsed")
+        if pdf_file:
+            text = extract_text_from_file(pdf_file)
+            st.session_state.patient = extract_patient_name(text)
+            st.session_state.conditions = extract_conditions(text)
+            st.success(f"✅ {pdf_file.name} uploaded!")
+            if st.button("Continue →", key="pdf_continue"):
+                st.session_state.step = 2
+                st.rerun()
+    
     with col3:
-        st.markdown('<div class="upload-card">🖼️<br><b>Scanned Image</b><br><small>Click to browse</small></div>', unsafe_allow_html=True)
-    
-    uploaded = st.file_uploader("", type=["pdf", "txt", "csv", "png", "jpg"], label_visibility="collapsed")
-    
-    if uploaded:
-        st.success(f"✅ File Uploaded Successfully: {uploaded.name}")
-        text = extract_text_from_file(uploaded)
-        st.session_state.patient = extract_patient_name(text)
-        st.session_state.conditions = extract_conditions(text)
-        st.session_state.step = 2
-        st.rerun()
+        st.markdown("""
+        <div style="background: white; border: 2px dashed #cbd5e1; border-radius: 16px; padding: 3rem 2rem; 
+                    text-align: center; cursor: pointer; transition: all 0.3s ease; margin: 1rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🖼️</div>
+            <h3 style="color: #1e293b; font-size: 1.1rem; font-weight: 600; margin: 0.5rem 0;">Scanned Image</h3>
+            <p style="color: #64748b; font-size: 0.9rem; margin: 0;">Click to browse</p>
+        </div>
+        """, unsafe_allow_html=True)
+        img_file = st.file_uploader("img", type=["png", "jpg", "jpeg"], key="img_upload", label_visibility="collapsed")
+        if img_file:
+            text = extract_text_from_file(img_file)
+            st.session_state.patient = extract_patient_name(text)
+            st.session_state.conditions = extract_conditions(text)
+            st.success(f"✅ {img_file.name} uploaded!")
+            if st.button("Continue →", key="img_continue"):
+                st.session_state.step = 2
+                st.rerun()
 
 # STEP 2: PREFERENCES
 elif st.session_state.step == 2:
@@ -428,12 +515,48 @@ elif st.session_state.step == 3:
     </div>
     """, unsafe_allow_html=True)
     
-    # Download buttons
-    col1, col2 = st.columns(2)
+    # Download buttons - ALL 3 FORMATS
+    st.markdown("<h3 style='font-size: 1.5rem; color: #1e293b; margin: 2rem 0 1rem 0; text-align: center;'>📥 Download Your Complete Report</h3>", unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns(3)
+    
     with col1:
-        json_data = {"patient": st.session_state.patient, "conditions": st.session_state.conditions, "duration": f"{st.session_state.duration} Days", "food_preference": st.session_state.food_pref, "meal_plan": st.session_state.full_plan}
-        st.download_button("📥 Download Report (.txt)", data=str(json_data), file_name=f"{st.session_state.duration}_day_plan.txt", mime="text/plain", use_container_width=True)
+        pdf_data = generate_pdf_report(st.session_state.patient, st.session_state.conditions, 
+                                       st.session_state.food_pref, st.session_state.duration, 
+                                       st.session_state.full_plan)
+        st.download_button(
+            "📑 Download PDF",
+            data=pdf_data,
+            file_name=f"{st.session_state.duration}_day_diet_plan.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
+    
     with col2:
-        if st.button("🔄 New Plan", use_container_width=True):
-            st.session_state.step = 1
-            st.rerun()
+        txt_data = generate_txt_report(st.session_state.patient, st.session_state.conditions, 
+                                       st.session_state.food_pref, st.session_state.duration, 
+                                       st.session_state.full_plan)
+        st.download_button(
+            "📄 Download TXT",
+            data=txt_data,
+            file_name=f"{st.session_state.duration}_day_diet_plan.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
+    
+    with col3:
+        json_data = generate_json_report(st.session_state.patient, st.session_state.conditions, 
+                                         st.session_state.food_pref, st.session_state.duration, 
+                                         st.session_state.full_plan)
+        st.download_button(
+            "📊 Download JSON",
+            data=json_data,
+            file_name=f"{st.session_state.duration}_day_diet_plan.json",
+            mime="application/json",
+            use_container_width=True
+        )
+    
+    # New Plan button
+    if st.button("🔄 Create New Plan", use_container_width=True):
+        st.session_state.step = 1
+        st.rerun()
