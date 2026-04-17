@@ -383,6 +383,7 @@ if st.session_state.step == 1:
 
     col1, col2, col3 = st.columns(3)
 
+    # -------- TEXT --------
     with col1:
         st.markdown("""
         <div class="upload-card">
@@ -391,7 +392,9 @@ if st.session_state.step == 1:
             <p style="color: #64748b; font-size: 0.85rem; margin: 0 0 0.75rem 0;">Upload a .txt file</p>
         </div>
         """, unsafe_allow_html=True)
-        txt_file = st.file_uploader("Upload TXT", type=["txt"], key="txt_upload")
+
+        txt_file = st.file_uploader("", type=["txt"], key="txt_upload", label_visibility="collapsed")
+
         if txt_file:
             text = extract_text_from_file(txt_file)
             st.session_state.patient = extract_patient_name(text)
@@ -401,6 +404,7 @@ if st.session_state.step == 1:
                 st.session_state.step = 2
                 st.rerun()
 
+    # -------- PDF --------
     with col2:
         st.markdown("""
         <div class="upload-card">
@@ -409,7 +413,9 @@ if st.session_state.step == 1:
             <p style="color: #64748b; font-size: 0.85rem; margin: 0 0 0.75rem 0;">Upload a .pdf file</p>
         </div>
         """, unsafe_allow_html=True)
-        pdf_file = st.file_uploader("Upload PDF", type=["pdf"], key="pdf_upload")
+
+        pdf_file = st.file_uploader("", type=["pdf"], key="pdf_upload", label_visibility="collapsed")
+
         if pdf_file:
             text = extract_text_from_file(pdf_file)
             st.session_state.patient = extract_patient_name(text)
@@ -419,6 +425,7 @@ if st.session_state.step == 1:
                 st.session_state.step = 2
                 st.rerun()
 
+    # -------- IMAGE --------
     with col3:
         st.markdown("""
         <div class="upload-card">
@@ -427,7 +434,9 @@ if st.session_state.step == 1:
             <p style="color: #64748b; font-size: 0.85rem; margin: 0 0 0.75rem 0;">Upload PNG or JPG</p>
         </div>
         """, unsafe_allow_html=True)
-        img_file = st.file_uploader("Upload Image", type=["png", "jpg", "jpeg"], key="img_upload")
+
+        img_file = st.file_uploader("", type=["png", "jpg", "jpeg"], key="img_upload", label_visibility="collapsed")
+
         if img_file:
             text = extract_text_from_file(img_file)
             st.session_state.patient = extract_patient_name(text)
@@ -437,13 +446,14 @@ if st.session_state.step == 1:
                 st.session_state.step = 2
                 st.rerun()
 
-    # Skip option
+    # -------- SKIP --------
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("""
     <div style="text-align: center; margin: 1rem 0;">
         <p style="color: #94a3b8; font-size: 0.9rem;">Don't have a report? You can skip this step.</p>
     </div>
     """, unsafe_allow_html=True)
+
     col_skip1, col_skip2, col_skip3 = st.columns([2, 1, 2])
     with col_skip2:
         if st.button("Skip →", key="skip"):
@@ -451,7 +461,6 @@ if st.session_state.step == 1:
             st.session_state.conditions = ["General Health"]
             st.session_state.step = 2
             st.rerun()
-
 # ─── STEP 2: PREFERENCES ──────────────────────────────────────────────────────
 
 elif st.session_state.step == 2:
