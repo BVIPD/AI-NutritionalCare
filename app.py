@@ -36,7 +36,7 @@ st.markdown("""
 #MainMenu, footer, header {display: none !important;}
 
 .header-bar {
-    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    background: linear-gradient(135deg, #1e3a2e 0%, #14532d 100%);
     padding: 1.5rem 2rem;
     border-radius: 0;
     margin: -2rem -1rem 2rem -1rem;
